@@ -28,12 +28,20 @@ const apiClient = axios.create({
 	},
 });
 
+function shouldAttachAuthToken(url) {
+	if (!url) {
+		return true;
+	}
+
+	return !["/auth/login", "/auth/register"].includes(url);
+}
+
 apiClient.interceptors.request.use(
 	(config) => {
 		startProgress();
 
 		const token = localStorage.getItem("authToken");
-		if (token) {
+		if (token && shouldAttachAuthToken(config.url)) {
 			config.headers.Authorization = `Bearer ${token}`;
 		}
 		return config;

@@ -10,6 +10,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -43,6 +44,10 @@ public class TemporaryRecruitment {
      * đang tuyển: true
      * ngưng tuyển: false
      */
+
+    @Lob
+    @Column(name = "content", columnDefinition = "TEXT")
+    private String content;
 
     @ManyToOne
     @JoinColumn(name = "reservation_id")

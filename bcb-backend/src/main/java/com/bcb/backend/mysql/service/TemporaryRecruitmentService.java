@@ -26,7 +26,6 @@ import com.bcb.backend.mysql.repository.ReservationRepository;
 import com.bcb.backend.mysql.repository.TemporaryRecruitmentRepository;
 import com.bcb.backend.SSE.SSEEventType;
 import com.bcb.backend.SSE.SSEService;
-import com.bcb.backend.mongo.service.TemporaryRecruitmentContentService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,7 +36,6 @@ public class TemporaryRecruitmentService {
 
 	private final TemporaryRecruitmentRepository temporaryRecruitmentRepository;
 	private final ReservationRepository reservationRepository;
-	private final TemporaryRecruitmentContentService trcService;
 	private final SSEService sseService;
 
 	@Transactional(rollbackFor = Exception.class)
@@ -47,17 +45,13 @@ public class TemporaryRecruitmentService {
 						() -> new RuntimeException("Reservation not found with id: " + request.getReservationId()));
 
 		TemporaryRecruitment temporaryRecruitment = TemporaryRecruitmentMapper.toEntity(request, reservation);
+		temporaryRecruitment.setContent(request.getContent() == null ? "" : request.getContent());
 
 		String temporaryId = GenerationId.generateId("temp");
 		temporaryRecruitment.setId(temporaryId);
 
 		TemporaryRecruitment savedEntity = temporaryRecruitmentRepository.save(temporaryRecruitment);
-		TemporaryRecruitmentCompactResponse response = TemporaryRecruitmentMapper.toDTO(savedEntity, trcService);
-
-		if (!request.getContent().isEmpty()) {
-			trcService.createContent(temporaryId, request.getContent());
-			response.setContent(request.getContent());
-		}
+		TemporaryRecruitmentCompactResponse response = TemporaryRecruitmentMapper.toDTO(savedEntity);
 
 		sseService.broadcastToAll(SSEEventType.TEMPORARY_RECRUITMENT_POST_CREATED, response);
 		return response;
@@ -137,10 +131,7 @@ public class TemporaryRecruitmentService {
 
 		Page<TemporaryRecruitment> pageResult = temporaryRecruitmentRepository.findAll(spec, pageable);
 
-		Page<TemporaryRecruitmentCompactResponse> mappedPage = pageResult.map(item -> {
-			TemporaryRecruitmentCompactResponse response = TemporaryRecruitmentMapper.toDTO(item, trcService);
-			return response;
-		});
+		Page<TemporaryRecruitmentCompactResponse> mappedPage = pageResult.map(TemporaryRecruitmentMapper::toDTO);
 
 		return PaginationResponse.<TemporaryRecruitmentCompactResponse>builder()
 				.data(mappedPage.getContent())
@@ -202,7 +193,7 @@ public class TemporaryRecruitmentService {
 				.quantity(temporaryRecruitment.getQuantity())
 				.isAvailable(temporaryRecruitment.isAvailable())
 				.reservationId(temporaryRecruitment.getReservation().getId())
-				.content(trcService.getContent(id))
+				.content(temporaryRecruitment.getContent() == null ? "" : temporaryRecruitment.getContent())
 				.bookAt(temporaryRecruitment.getReservation().getBookAt())
 				.username(temporaryRecruitment.getReservation().getPlayer().getAccount().getUsername())
 				.imagePath(temporaryRecruitment.getReservation().getPlayer().getAccount().getImagePath())
@@ -229,7 +220,7 @@ public class TemporaryRecruitmentService {
 					.quantity(item.getQuantity())
 					.isAvailable(item.isAvailable())
 					.reservationId(resId)
-					.content(trcService.getContent(item.getId()))
+					.content(item.getContent() == null ? "" : item.getContent())
 					.bookAt(item.getReservation().getBookAt())
 					.build();
 		}).collect(Collectors.toList());
@@ -240,19 +231,17 @@ public class TemporaryRecruitmentService {
 		TemporaryRecruitment temporaryRecruitment = temporaryRecruitmentRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("TemporaryRecruitment not found"));
 
-		TemporaryRecruitmentCompactResponse response;
-
 		temporaryRecruitment.setQuantity(request.getQuantity());
 		temporaryRecruitment.setAvailable(request.getAvailable());
-		response = TemporaryRecruitmentMapper.toDTO(temporaryRecruitment, trcService);
 
-		if (!request.getContent().isEmpty()) {
-			trcService.editContent(id, request.getContent());
-			response.setContent(request.getContent());
+		if (request.getContent() != null && !request.getContent().isEmpty()) {
+			temporaryRecruitment.setContent(request.getContent());
+		} else if (temporaryRecruitment.getContent() == null) {
+			temporaryRecruitment.setContent("");
 		}
-		temporaryRecruitmentRepository.save(temporaryRecruitment);
+		temporaryRecruitment = temporaryRecruitmentRepository.save(temporaryRecruitment);
 
-		return response;
+		return TemporaryRecruitmentMapper.toDTO(temporaryRecruitment);
 	}
 
 	public TemporaryRecruitmentCompactResponse changeStatus(String id, boolean isAvailable) {
@@ -260,13 +249,9 @@ public class TemporaryRecruitmentService {
 				.orElseThrow(() -> new RuntimeException("TemporaryRecruitment not found"));
 
 		temporaryRecruitment.setAvailable(isAvailable);
-		temporaryRecruitmentRepository.save(temporaryRecruitment);
+		temporaryRecruitment = temporaryRecruitmentRepository.save(temporaryRecruitment);
 
-		TemporaryRecruitmentCompactResponse response = TemporaryRecruitmentMapper.toDTO(temporaryRecruitment,
-				trcService);
-		response.setContent(trcService.getContent(id));
-
-		return response;
+		return TemporaryRecruitmentMapper.toDTO(temporaryRecruitment);
 
 	}
 

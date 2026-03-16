@@ -15,6 +15,7 @@ public class BranchMapper {
 				.bankName(entity.getBankName())
 				.bankNumber(entity.getBankNumber())
 				.isCooperated(entity.isCooperated())
+				.description(entity.getDescription() == null ? "" : entity.getDescription())
 				.build();
 	}
 
@@ -25,6 +26,7 @@ public class BranchMapper {
 				.address(dto.getAddress())
 				.bankName(dto.getBankName())
 				.bankNumber(dto.getBankNumber())
+				.description("")
 				.build();
 	}
 }

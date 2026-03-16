@@ -6,7 +6,6 @@ import com.bcb.backend.mysql.dto.request.TemporaryRecruitmentRequest;
 import com.bcb.backend.mysql.dto.response.TemporaryRecruitmentCompactResponse;
 import com.bcb.backend.mysql.model.Reservation;
 import com.bcb.backend.mysql.model.TemporaryRecruitment;
-import com.bcb.backend.mongo.service.TemporaryRecruitmentContentService;;
 
 public class TemporaryRecruitmentMapper {
 
@@ -19,9 +18,7 @@ public class TemporaryRecruitmentMapper {
                 .build();
     }
 
-    public static TemporaryRecruitmentCompactResponse toDTO(
-            TemporaryRecruitment temporaryRecruitment,
-            TemporaryRecruitmentContentService trcService) {
+    public static TemporaryRecruitmentCompactResponse toDTO(TemporaryRecruitment temporaryRecruitment) {
 
         return TemporaryRecruitmentCompactResponse.builder()
                 .id(temporaryRecruitment.getId())
@@ -31,7 +28,7 @@ public class TemporaryRecruitmentMapper {
                 .reservationId(temporaryRecruitment.getReservation() != null
                         ? temporaryRecruitment.getReservation().getId()
                         : null)
-                .content(trcService.getContent(temporaryRecruitment.getId()))
+                .content(temporaryRecruitment.getContent() == null ? "" : temporaryRecruitment.getContent())
                 .bookAt(temporaryRecruitment.getReservation().getBookAt())
                 .username(temporaryRecruitment.getReservation().getPlayer().getAccount().getUsername())
                 .imagePath(temporaryRecruitment.getReservation().getPlayer().getAccount().getImagePath())

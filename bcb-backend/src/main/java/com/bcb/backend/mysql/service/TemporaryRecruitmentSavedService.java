@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.bcb.backend.mongo.service.TemporaryRecruitmentContentService;
 import com.bcb.backend.mysql.dto.response.TemporaryRecruitmentCompactResponse;
 import com.bcb.backend.mysql.mapper.TemporaryRecruitmentMapper;
 import com.bcb.backend.mysql.model.Player;
@@ -26,7 +25,6 @@ public class TemporaryRecruitmentSavedService {
     private final TemporaryRecruitmentSavedRepository temporaryRecruitmentSavedRepository;
     private final AccountRepository accountRepository;
     private final TemporaryRecruitmentRepository temporaryRecruitmentRepository;
-    private final TemporaryRecruitmentContentService trcService;
 
     public TemporaryRecruitmentCompactResponse create(String accountId, String temporaryRecruitmentId) {
         TemporaryRecruitment recruitment = temporaryRecruitmentRepository.findById(temporaryRecruitmentId)
@@ -42,7 +40,7 @@ public class TemporaryRecruitmentSavedService {
                 .build();
         temporaryRecruitmentSavedRepository.save(savedEntity);
 
-        return TemporaryRecruitmentMapper.toDTO(savedEntity.getTemporaryRecruitment(), trcService);
+        return TemporaryRecruitmentMapper.toDTO(savedEntity.getTemporaryRecruitment());
     }
 
     public List<TemporaryRecruitmentCompactResponse> getAllTemporaryRecruitmentSavedOfPlayer(String accountId) {
@@ -51,8 +49,7 @@ public class TemporaryRecruitmentSavedService {
 
         return temporaryRecruitmentSavedRepository
                 .findByPlayerId(playerId).stream()
-                .map((item) -> TemporaryRecruitmentMapper.toDTO(item.getTemporaryRecruitment(),
-                        trcService))
+                .map((item) -> TemporaryRecruitmentMapper.toDTO(item.getTemporaryRecruitment()))
                 .toList();
     }
 

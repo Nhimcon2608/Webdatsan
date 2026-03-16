@@ -212,6 +212,12 @@ const LoginModal = ({
 
     const handleAuthError = (error) => {
         console.error('Authentication error:', error);
+
+        if (!error?.response) {
+            setGeneralError('Không thể kết nối tới máy chủ. Hãy kiểm tra backend đang chạy tại http://localhost:8080.');
+            return;
+        }
+
         if (error?.response?.data?.fieldErrors) {
             setFieldErrors(error.response.data.fieldErrors);
         } else {

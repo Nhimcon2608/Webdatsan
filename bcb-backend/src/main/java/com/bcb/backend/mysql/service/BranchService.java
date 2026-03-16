@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.security.auth.login.AccountNotFoundException;
 import org.springframework.stereotype.Service;
-import com.bcb.backend.mongo.service.BranchDescriptionService;
 import com.bcb.backend.mysql.dto.request.CreateBranchRequest;
 import com.bcb.backend.mysql.dto.request.UpdateBranchRequest;
 import com.bcb.backend.mysql.dto.response.AccountResponse;
@@ -20,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 public class BranchService {
 
 	private final BranchRepository branchRepo;
-	private final BranchDescriptionService branchDescriptionService;
 	private final AccountService accountService;
 	private final AccountRepository accountRepo;
 	private final PartnershipRequestRepository partnershipRequestRepo;
@@ -78,7 +76,6 @@ public class BranchService {
 					BranchResponse response = BranchMapper.toDTO(branch);
 					response.setPhoneNumber(account.getPhoneNumber());
 					response.setImagePath(account.getImagePath());
-					response.setDescription(branchDescriptionService.getContentById(id));
 					response.setPrices(priceService.getPricesByBranchId(branch.getId()));
 
 					return response;
@@ -96,7 +93,6 @@ public class BranchService {
 					BranchResponse response = BranchMapper.toDTO(branch);
 					response.setPhoneNumber(account.getPhoneNumber());
 					response.setImagePath(account.getImagePath());
-					response.setDescription(branchDescriptionService.getContentById(branch.getId()));
 					response.setPrices(priceService.getPricesByBranchId(branch.getId()));
 
 					return response;
@@ -128,7 +124,6 @@ public class BranchService {
 
 			branch.setCooperated(true);
 			partnershipRequestService.updateStatus(branchRequest.getPartnershipRequestId(), "approved");
-			branchDescriptionService.createDescription(branch.getId());
 
 			branch.setAccount(accountRepo.findById(newAccount.getId())
 					.orElseThrow(() -> new AccountNotFoundException(
@@ -147,7 +142,7 @@ public class BranchService {
 				.orElseThrow(() -> new IllegalArgumentException("Branch not found with id: " + id));
 
 		if (updateBranchRequest.getDescription() != null) {
-			branchDescriptionService.setContentById(id, updateBranchRequest.getDescription());
+			branch.setDescription(updateBranchRequest.getDescription());
 		}
 
 		if (updateBranchRequest.getBranchName() != null) {
@@ -168,18 +163,13 @@ public class BranchService {
 
 		Branch updatedBranch = branchRepo.save(branch);
 
-		BranchResponse response = BranchMapper.toDTO(updatedBranch);
-		response.setDescription(branchDescriptionService.getContentById(id));
-		return response;
+		return BranchMapper.toDTO(updatedBranch);
 	}
 
 	public BranchResponse getBranchByAccountId(String accountId) {
 		Branch branch = branchRepo.findByAccountId(accountId)
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy chi nhánh với accountId: " + accountId));
 
-		BranchResponse response = BranchMapper.toDTO(branch);
-		response.setDescription(branchDescriptionService.getContentById(branch.getId()));
-
-		return response;
+		return BranchMapper.toDTO(branch);
 	}
 }
