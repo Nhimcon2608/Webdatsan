@@ -68,6 +68,26 @@ const Header = () => {
 		}
 	};
 
+	const handleProfileNavigation = () => {
+		if (!user) {
+			navigate('/login');
+			return;
+		}
+
+		switch (user.role) {
+			case 'ADMIN':
+				navigate('/admin/dashboard');
+				return;
+			case 'MANAGER':
+				navigate('/manager/dashboard');
+				return;
+			default:
+				navigate('/profile');
+		}
+	};
+
+	const profileTooltipTitle = user?.role === 'USER' ? 'Hồ sơ' : 'Tài khoản';
+
 	const isActive = (path) => location.pathname === path;
 
 	const menuItems = [
@@ -306,8 +326,8 @@ const Header = () => {
 						{/* User Avatar / Login */}
 						{user ? (
 							<>
-								<Tooltip title="Hồ sơ" arrow TransitionComponent={Fade}>
-									<IconButton onClick={() => navigate('/profile')}>
+								<Tooltip title={profileTooltipTitle} arrow TransitionComponent={Fade}>
+									<IconButton onClick={handleProfileNavigation}>
 										{user.imagePath ? (
 											<Avatar
 												src={`${import.meta.env.VITE_API_URL}/${user.imagePath}`}

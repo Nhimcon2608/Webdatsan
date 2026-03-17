@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,30 +22,25 @@ import com.bcb.backend.mysql.dto.request.AccountRequest;
 import com.bcb.backend.mysql.dto.request.ChangePasswordRequest;
 import com.bcb.backend.mysql.dto.request.ChangeRoleRequets;
 import com.bcb.backend.mysql.service.AccountService;
-import com.bcb.backend.util.JwtUtil;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/accounts")
 public class AccountController {
 
 	private final AccountService accountService;
-	private final JwtUtil jwtUtil;
 
-	public AccountController(AccountService accountService, JwtUtil jwtUtil) {
+	public AccountController(AccountService accountService) {
 		this.accountService = accountService;
-		this.jwtUtil = jwtUtil;
 	}
 
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/me")
-	public ResponseEntity<?> getAccountByUsername(HttpServletRequest httpRequest) {
+	public ResponseEntity<?> getAccountByUsername() {
 
-		Map<String, String> tokenExtracted = extractToken(httpRequest);
+		Map<String, String> accountContext = extractAuthenticatedAccount();
 
-		if (tokenExtracted != null) {
-			String username = tokenExtracted.get("username");
+		if (accountContext != null) {
+			String username = accountContext.get("username");
 
 			return ResponseEntity.ok(accountService.getAccountByUserName(username));
 		}
@@ -52,27 +49,26 @@ public class AccountController {
 
 	@PreAuthorize("isAuthenticated()")
 	@PutMapping("/upload-image")
-	public ResponseEntity<?> uploadImage(HttpServletRequest httpRequest, @RequestParam("file") MultipartFile file)
+	public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file)
 			throws IOException {
 
-		Map<String, String> tokenExtracted = extractToken(httpRequest);
+		Map<String, String> accountContext = extractAuthenticatedAccount();
 
-		if (tokenExtracted != null) {
-			return ResponseEntity.ok(accountService.uploadImage(tokenExtracted.get("id"), file));
+		if (accountContext != null) {
+			return ResponseEntity.ok(accountService.uploadImage(accountContext.get("id"), file));
 		}
 		return ResponseEntity.badRequest().body("Invalid authorization.");
 	}
 
 	@PreAuthorize("isAuthenticated()")
 	@PatchMapping("/change-password")
-	public ResponseEntity<?> changePassword(HttpServletRequest httpRequest,
-			@RequestBody ChangePasswordRequest changePasswordRequest) {
+	public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
 
-		Map<String, String> tokenExtracted = extractToken(httpRequest);
+		Map<String, String> accountContext = extractAuthenticatedAccount();
 
-		if (tokenExtracted != null) {
+		if (accountContext != null) {
 
-			String id = tokenExtracted.get("id");
+			String id = accountContext.get("id");
 
 			try {
 				accountService.changePassword(id, changePasswordRequest);
@@ -99,26 +95,22 @@ public class AccountController {
 		return ResponseEntity.ok(accountService.changeRole(requets.getId(), requets.getRole()));
 	}
 
-	private Map<String, String> extractToken(HttpServletRequest httpRequest) {
+	private Map<String, String> extractAuthenticatedAccount() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		String authHeader = httpRequest.getHeader("Authorization");
-
-		if (authHeader != null && authHeader.startsWith("Bearer ")) {
-			String token = authHeader.substring(7);
-
-			String id = jwtUtil.extractAccountId(token);
-			String username = jwtUtil.extractUsername(token);
-
-			Map<String, String> tokenExtracted = new HashMap<>();
-
-			tokenExtracted.put("id", id);
-			tokenExtracted.put("username", username);
-
-			return tokenExtracted;
-
+		if (authentication == null || !authentication.isAuthenticated()) {
+			return null;
 		}
 
-		return null;
+		String username = authentication.getName();
+		if (username == null || "anonymousUser".equals(username)) {
+			return null;
+		}
+
+		Map<String, String> accountContext = new HashMap<>();
+		accountContext.put("id", accountService.getIdByUsername(username));
+		accountContext.put("username", username);
+		return accountContext;
 	}
 
 }

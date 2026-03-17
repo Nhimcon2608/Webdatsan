@@ -34,11 +34,8 @@ const UserService = {
     uploadAvatar: async (formData) => {
         try {
             const response = await apiClient.put('/accounts/upload-image', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
             });
-            return response;
+            return response.data;
         } catch (error) {
             console.error('Error uploading avatar:', error);
             throw error;

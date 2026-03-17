@@ -8,20 +8,18 @@ import org.springframework.stereotype.Service;
 import com.bcb.backend.mysql.dto.request.PlayerRequest;
 import com.bcb.backend.mysql.dto.response.PlayerResponse;
 import com.bcb.backend.mysql.mapper.PlayerMapper;
-import com.bcb.backend.mysql.model.Account;
 import com.bcb.backend.mysql.model.Player;
-import com.bcb.backend.mysql.repository.AccountRepository;
 import com.bcb.backend.mysql.repository.PlayerRepository;
 
 @Service
 public class PlayerService {
 
     private final PlayerRepository playerRepo;
-    private final AccountRepository accountRepo;
+    private final PlayerAccountService playerAccountService;
 
-    public PlayerService(PlayerRepository playerRepo, AccountRepository accountRepo) {
+    public PlayerService(PlayerRepository playerRepo, PlayerAccountService playerAccountService) {
         this.playerRepo = playerRepo;
-        this.accountRepo = accountRepo;
+        this.playerAccountService = playerAccountService;
     }
 
     public List<PlayerResponse> getAllPlayer() {
@@ -29,22 +27,11 @@ public class PlayerService {
     }
 
     public PlayerResponse getPlayerByAccountId(String accountId) {
-
-        Account account = accountRepo.findById(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("Dtails Not found with player id: " + accountId));
-
-        Player player = playerRepo.findById(account.getPlayer().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Player not found with player id: " + accountId));
-
-        if (account.isActivated() == true) {
-            return PlayerMapper.toDTO(player);
-        }
-
-        return null;
+        return PlayerMapper.toDTO(playerAccountService.getPlayerForUserAccount(accountId));
     }
 
     public String getPlayerIdByAccountId(String accountId) {
-        return playerRepo.findByAccountId(accountId).orElseThrow(() -> new IllegalArgumentException("Invalid authorization")).getId();
+        return playerAccountService.getPlayerForUserAccount(accountId).getId();
     }
 
     public PlayerResponse updatePlayerInfor(String id, PlayerRequest playerRequest) {

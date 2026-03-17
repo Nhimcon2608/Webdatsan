@@ -3,6 +3,7 @@ package com.bcb.backend.mysql.service;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +28,7 @@ public class AccountService {
     private static final String USERNAME_ALREADY_EXISTS = "Username already exists";
     private static final String PHONE_NUMBER_LIMIT_EXCEEDED = "This phone number has exceeded the number of registrations.";
     private static final String OLD_PASSWORD_INCORRECT = "Old password is incorrect";
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     private final AccountRepository accountRepo;
     private final PasswordEncoder passwordEncoder;
@@ -87,12 +89,16 @@ public class AccountService {
     }
 
     public AccountResponse registerUserAccount(AccountRequest accountRequest) {
+        validateUserRegistrationRequest(accountRequest);
 
         AccountResponse response = registerAccount(accountRequest, "USER");
+        String registrationEmail = resolveRegistrationEmail(accountRequest, response.getUsername());
 
         Player newPlayer = Player.builder()
                 .id(GenerationId.generateId("play"))
+                .fullName(accountRequest.getFullName() == null ? null : accountRequest.getFullName().trim())
                 .gender(null)
+                .email(registrationEmail)
                 .account(Account.builder()
                         .id(response.getId())
                         .username(response.getUsername())
@@ -178,7 +184,44 @@ public class AccountService {
         }
     }
 
-    public String uploadImage(String id, MultipartFile file) throws IOException {
+    private void validateUserRegistrationRequest(AccountRequest accountRequest) {
+        if (accountRequest.getFullName() == null || accountRequest.getFullName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Họ và tên không được để trống");
+        }
+
+        String email = accountRequest.getEmail();
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email không được để trống");
+        }
+
+        if (!EMAIL_PATTERN.matcher(email.trim()).matches()) {
+            throw new IllegalArgumentException("Email không hợp lệ");
+        }
+    }
+
+    private String resolveRegistrationEmail(AccountRequest accountRequest, String username) {
+        String requestEmail = accountRequest.getEmail();
+        if (requestEmail != null && !requestEmail.trim().isEmpty()) {
+            return requestEmail.trim();
+        }
+
+        return extractEmailFromUsername(username);
+    }
+
+    private String extractEmailFromUsername(String username) {
+        if (username == null) {
+            return null;
+        }
+
+        String normalizedUsername = username.trim();
+        if (EMAIL_PATTERN.matcher(normalizedUsername).matches()) {
+            return normalizedUsername;
+        }
+
+        return null;
+    }
+
+    public AccountResponse uploadImage(String id, MultipartFile file) throws IOException {
 
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
@@ -201,9 +244,9 @@ public class AccountService {
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
         branch.setImagePath(uploadDir + fileName);
-        accountRepo.save(branch);
+        Account savedAccount = accountRepo.save(branch);
 
-        return filePath.toString();
+        return AccountMapper.toDTO(savedAccount);
 
     }
 }

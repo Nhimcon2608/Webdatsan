@@ -12,8 +12,12 @@ import {
     Paper,
     Dialog,
     DialogContent,
+    IconButton,
+    InputAdornment,
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 
 const StyledDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialog-container': {
@@ -105,6 +109,8 @@ const LoginModal = ({
     const [loginData, setLoginData] = useState({ username: '', password: '' });
     const [registerData, setRegisterData] = useState({
         username: '',
+        fullName: '',
+        email: '',
         password: '',
         phoneNumber: '',
         confirmPassword: ''
@@ -112,6 +118,9 @@ const LoginModal = ({
     const [fieldErrors, setFieldErrors] = useState({});
     const [generalError, setGeneralError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showLoginPassword, setShowLoginPassword] = useState(false);
+    const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+    const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
 
     const [isExiting, setIsExiting] = useState(false);
 
@@ -147,6 +156,12 @@ const LoginModal = ({
     const validateRegisterForm = () => {
         const errors = {};
         if (!registerData.username.trim()) errors.username = "Tên đăng nhập là bắt buộc";
+        if (!registerData.fullName.trim()) errors.fullName = "Họ và tên là bắt buộc";
+        if (!registerData.email.trim()) {
+            errors.email = "Email là bắt buộc";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerData.email.trim())) {
+            errors.email = "Email không hợp lệ";
+        }
         if (!registerData.password.trim()) errors.password = "Mật khẩu là bắt buộc";
         if (!registerData.phoneNumber.trim()) errors.phoneNumber = "Số điện thoại là bắt buộc";
         if (registerData.password !== registerData.confirmPassword) {
@@ -196,6 +211,8 @@ const LoginModal = ({
         try {
             const response = await authService.register({
                 username: registerData.username,
+                fullName: registerData.fullName,
+                email: registerData.email,
                 password: registerData.password,
                 phoneNumber: registerData.phoneNumber
             });
@@ -281,14 +298,14 @@ const LoginModal = ({
                             onChange={handleLoginChange}
                             required
                             error={!!fieldErrors.username}
-                            helperText={fieldErrors.username}
+                            helperText={fieldErrors.username || 'Nhập tên đăng nhập bạn đã tạo khi đăng ký'}
                             disabled={isLoading}
                         />
                         <StyledTextField
                             fullWidth
                             label="Mật khẩu"
                             variant="outlined"
-                            type="password"
+                            type={showLoginPassword ? 'text' : 'password'}
                             name="password"
                             value={loginData.password}
                             onChange={handleLoginChange}
@@ -296,6 +313,19 @@ const LoginModal = ({
                             error={!!fieldErrors.password}
                             helperText={fieldErrors.password}
                             disabled={isLoading}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            onClick={() => setShowLoginPassword((prev) => !prev)}
+                                            edge="end"
+                                            tabIndex={-1}
+                                        >
+                                            {showLoginPassword ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
                         <StyledButton
                             variant="contained"
@@ -324,7 +354,33 @@ const LoginModal = ({
                             onChange={handleRegisterChange}
                             required
                             error={!!fieldErrors.username}
-                            helperText={fieldErrors.username}
+                            helperText={fieldErrors.username || 'Tên dùng để đăng nhập, ví dụ: quangthien26'}
+                            disabled={isLoading}
+                        />
+                        <StyledTextField
+                            fullWidth
+                            label="Họ và tên"
+                            variant="outlined"
+                            type="text"
+                            name="fullName"
+                            value={registerData.fullName}
+                            onChange={handleRegisterChange}
+                            required
+                            error={!!fieldErrors.fullName}
+                            helperText={fieldErrors.fullName}
+                            disabled={isLoading}
+                        />
+                        <StyledTextField
+                            fullWidth
+                            label="Email"
+                            variant="outlined"
+                            type="email"
+                            name="email"
+                            value={registerData.email}
+                            onChange={handleRegisterChange}
+                            required
+                            error={!!fieldErrors.email}
+                            helperText={fieldErrors.email || 'Email dùng để nhận thông tin và tự điền vào hồ sơ'}
                             disabled={isLoading}
                         />
                         <StyledTextField
@@ -344,7 +400,7 @@ const LoginModal = ({
                             fullWidth
                             label="Mật khẩu"
                             variant="outlined"
-                            type="password"
+                            type={showRegisterPassword ? 'text' : 'password'}
                             name="password"
                             value={registerData.password}
                             onChange={handleRegisterChange}
@@ -352,12 +408,25 @@ const LoginModal = ({
                             error={!!fieldErrors.password}
                             helperText={fieldErrors.password}
                             disabled={isLoading}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            onClick={() => setShowRegisterPassword((prev) => !prev)}
+                                            edge="end"
+                                            tabIndex={-1}
+                                        >
+                                            {showRegisterPassword ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
                         <StyledTextField
                             fullWidth
                             label="Xác nhận mật khẩu"
                             variant="outlined"
-                            type="password"
+                            type={showRegisterConfirmPassword ? 'text' : 'password'}
                             name="confirmPassword"
                             value={registerData.confirmPassword}
                             onChange={handleRegisterChange}
@@ -365,6 +434,19 @@ const LoginModal = ({
                             error={!!fieldErrors.confirmPassword}
                             helperText={fieldErrors.confirmPassword}
                             disabled={isLoading}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            onClick={() => setShowRegisterConfirmPassword((prev) => !prev)}
+                                            edge="end"
+                                            tabIndex={-1}
+                                        >
+                                            {showRegisterConfirmPassword ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
                         <StyledButton
                             variant="contained"
