@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.bcb.backend.mongo.service.ReviewContentService;
 import com.bcb.backend.mysql.dto.request.ReviewRequeset;
 import com.bcb.backend.mysql.dto.response.ReviewResponse;
 import com.bcb.backend.mysql.mapper.ReviewMapper;
@@ -20,17 +19,14 @@ import com.bcb.backend.mysql.repository.ReviewRepository;
 public class ReviewService {
 
     private final ReviewRepository reviewRepo;
-    private final ReviewContentService reviewContentService;
     private final AccountRepository accountRepo;
     private final PlayerRepository playerRepo;
     private final BranchRepository branchRepo;
 
-    public ReviewService(ReviewRepository reviewRepo, AccountRepository accountRepo,
-            ReviewContentService reviewContentService, PlayerRepository playerRepo,
+    public ReviewService(ReviewRepository reviewRepo, AccountRepository accountRepo, PlayerRepository playerRepo,
             BranchRepository branchRepo) {
         this.reviewRepo = reviewRepo;
         this.accountRepo = accountRepo;
-        this.reviewContentService = reviewContentService;
         this.playerRepo = playerRepo;
         this.branchRepo = branchRepo;
     }
@@ -43,7 +39,6 @@ public class ReviewService {
 
         return reviews.stream().map(r -> {
             ReviewResponse response = ReviewMapper.toDTO(r);
-            response.setContent(reviewContentService.getContentById(r.getId()));
 
             Account account = accountRepo.findById(r.getPlayer().getAccount().getId())
                     .orElseThrow(() -> new IllegalArgumentException(
@@ -66,7 +61,6 @@ public class ReviewService {
         return reviews.stream().map(r -> {
 
             ReviewResponse response = ReviewMapper.toDTO(r);
-            response.setContent(reviewContentService.getContentById(r.getId()));
 
             Account account = accountRepo.findById(accountId)
                     .orElseThrow(() -> new IllegalArgumentException(
@@ -88,6 +82,7 @@ public class ReviewService {
         Review review = Review.builder()
                 .id(id)
                 .raringLevel(request.getRatingLevel())
+                .content(request.getContent() == null ? "" : request.getContent())
                 .player(playerRepo.findById(request.getPlayerId()).orElseThrow(
                         () -> new IllegalArgumentException("Player not found with id " + request.getPlayerId())))
                 .branch(branchRepo.findById(request.getBranchId()).orElseThrow(
@@ -95,13 +90,12 @@ public class ReviewService {
                 .build();
 
         review = reviewRepo.save(review);
-        reviewContentService.createDescription(id, request.getContent());
 
         return ReviewResponse.builder()
                 .id(id)
                 .createAt(review.getCreateAt())
                 .ratingLevel(review.getRaringLevel())
-                .content(request.getContent())
+                .content(review.getContent())
                 .build();
     }
 
@@ -113,10 +107,10 @@ public class ReviewService {
             return null;
         }
 
-        try {
-            reviewContentService.editContent(id, request.getContent());
-        } catch (Exception e) {
-            reviewContentService.createDescription(id, request.getContent());
+        if (request.getContent() != null && !request.getContent().isEmpty()) {
+            review.setContent(request.getContent());
+        } else if (review.getContent() == null) {
+            review.setContent("");
         }
 
         review.setRaringLevel(request.getRatingLevel());
@@ -127,7 +121,7 @@ public class ReviewService {
                 .id(id)
                 .createAt(review.getCreateAt())
                 .ratingLevel(review.getRaringLevel())
-                .content(request.getContent())
+                .content(review.getContent())
                 .build();
     }
 

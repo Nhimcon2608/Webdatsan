@@ -1,5 +1,6 @@
 package com.bcb.backend.security;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.bcb.backend.mysql.service.TokenBlacklistService;
 import com.bcb.backend.util.JwtUtil;
 
-import io.jsonwebtoken.io.IOException;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,7 +44,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
-            @NonNull FilterChain chain) throws ServletException, IOException, java.io.IOException {
+            @NonNull FilterChain chain) throws ServletException, IOException {
 
         final String authorizationHeader = request.getHeader("Authorization");
 
@@ -62,8 +64,12 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
             try {
                 username = jwtUtil.extractUsername(jwt);
-            } catch (Exception e) {
-                throw e;
+            } catch (ExpiredJwtException e) {
+                writeUnauthorizedResponse(response, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                return;
+            } catch (JwtException | IllegalArgumentException e) {
+                writeUnauthorizedResponse(response, "Token không hợp lệ. Vui lòng đăng nhập lại.");
+                return;
             }
         }
 
@@ -82,5 +88,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             }
         }
         chain.doFilter(request, response);
+    }
+
+    private void writeUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setContentType("application/json; charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.getWriter().write("{\"message\":\"" + message + "\"}");
     }
 }

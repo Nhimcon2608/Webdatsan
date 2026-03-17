@@ -1,11 +1,16 @@
 package com.bcb.backend.mysql.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.data.redis.core.ValueOperations;
 
 @Service
 public class RedisService {
+
+    private static final Logger logger = LoggerFactory.getLogger(RedisService.class);
 
     @Autowired
     private ValueOperations<String, String> valueOperations;
@@ -14,24 +19,37 @@ public class RedisService {
     private static final String PHONE_PREFIX = "phone:";
 
     public boolean existsPhoneInCache(String phone) {
-        System.out.println("Checking cache for phone: " + phone);
-        return valueOperations.get(PHONE_PREFIX + phone) != null;
+        try {
+            return valueOperations.get(PHONE_PREFIX + phone) != null;
+        } catch (DataAccessException e) {
+            logger.warn("Redis unavailable while checking phone cache.", e);
+            return false;
+        }
     }
 
     public boolean existsEmailInCache(String email) {
-        System.out.println("Checking cache for phone: " + email);
-        return valueOperations.get(EMAIL_PREFIX + email) != null;
+        try {
+            return valueOperations.get(EMAIL_PREFIX + email) != null;
+        } catch (DataAccessException e) {
+            logger.warn("Redis unavailable while checking email cache.", e);
+            return false;
+        }
     } 
     
     public void addPhoneToCache(String phone) {
-        System.out.println("Adding phone: " + phone + " to cache");
-        valueOperations.set(PHONE_PREFIX + phone, "exists");
+        try {
+            valueOperations.set(PHONE_PREFIX + phone, "exists");
+        } catch (DataAccessException e) {
+            logger.warn("Redis unavailable while caching phone.", e);
+        }
     }
 
     public void addEmailToCache(String email) {
-        System.out.println("Adding email: " + email + " to cache");
-        valueOperations.set(EMAIL_PREFIX + email, "exists");
-
+        try {
+            valueOperations.set(EMAIL_PREFIX + email, "exists");
+        } catch (DataAccessException e) {
+            logger.warn("Redis unavailable while caching email.", e);
+        }
     }
 
 }

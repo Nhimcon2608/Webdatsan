@@ -11,6 +11,7 @@ public class ReviewMapper {
                 .id(entity.getId())
                 .createAt(entity.getCreateAt())
                 .ratingLevel(entity.getRaringLevel())
+                .content(entity.getContent() == null ? "" : entity.getContent())
                 .branchId(entity.getBranch().getId())
                 .build();
 

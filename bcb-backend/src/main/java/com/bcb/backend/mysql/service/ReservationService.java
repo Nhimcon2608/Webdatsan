@@ -33,6 +33,7 @@ public class ReservationService {
 	private final VoucherRepository voucherRepository;
 	private final BranchRepository branchRepository;
 	private final SSEService sseService;
+	private final PlayerAccountService playerAccountService;
 
 	public List<ReservationResponseDTO> getAllReservations() {
 		return reservationRepository.findAll().stream()
@@ -58,8 +59,7 @@ public class ReservationService {
 		 * đã hủy: cancel
 		 */
 
-		String playerId = playerRepository.findByAccountId(accountId)
-				.orElseThrow(() -> new IllegalArgumentException("User not found")).getId();
+		String playerId = playerAccountService.getPlayerForUserAccount(accountId).getId();
 
 		if (status.equals("all")) {
 			return reservationRepository.findAll().stream()

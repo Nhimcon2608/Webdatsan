@@ -72,11 +72,13 @@ import userService from '../../services/userService';
 import reservationService from '../../services/reservationService';
 import reviewService from '../../services/reviewService';
 import branchService from '../../services/branchServce'
+import { useAuth } from '../../../context/AuthContext';
 
 
 const ProfilePage = () => {
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+	const { setUser } = useAuth();
 
 	const [profile, setProfile] = useState(null);
 	const [account, setAccount] = useState(null);
@@ -214,21 +216,41 @@ const ProfilePage = () => {
 
 	const handleSaveClick = async () => {
 		try {
-			let updatedProfile = { ...editedProfile };
+			const updatedProfile = { ...editedProfile };
+			let nextAccount = account;
 
 			if (editedProfile.avatarFile) {
 				const formData = new FormData();
 				formData.append('file', editedProfile.avatarFile);
 				const uploadResponse = await userService.uploadAvatar(formData);
-				updatedProfile.imagePath = uploadResponse.data;
+				nextAccount = uploadResponse;
+				setAccount(uploadResponse);
+				setUser(uploadResponse);
 			}
 
-			await userService.updateProfile(updatedProfile);
-			setProfile(updatedProfile);
+			const profilePayload = {
+				fullName: updatedProfile.fullName?.trim() || '',
+				dob: updatedProfile.dob || null,
+				gender: updatedProfile.gender === ''
+					? null
+					: updatedProfile.gender === 'true'
+						? true
+						: updatedProfile.gender === 'false'
+							? false
+							: updatedProfile.gender,
+				email: updatedProfile.email?.trim() || '',
+			};
+
+			const profileResponse = await userService.updateProfile(profilePayload);
+			setProfile(profileResponse.data);
+			setEditedProfile({
+				...profileResponse.data,
+				imagePath: nextAccount?.imagePath,
+			});
 			setEditMode(false);
 			showSnackbar('Cập nhật thông tin thành công', 'success');
 		} catch (err) {
-			setError(err);
+			console.error('Profile update failed:', err);
 			showSnackbar('Cập nhật thông tin thất bại', 'error');
 		}
 	};
@@ -292,6 +314,17 @@ const ProfilePage = () => {
 			severity
 		});
 	};
+
+	const getProfileFieldInputProps = (isOutlined) => ({
+		...(isOutlined ? {} : { disableUnderline: true }),
+		style: { minHeight: '56px' }
+	});
+
+	const avatarSrc = editedProfile.avatarFile && editedProfile.imagePath
+		? editedProfile.imagePath
+		: account?.imagePath
+			? `${import.meta.env.VITE_API_URL}/${account.imagePath}`
+			: '/default-avatar.jpg';
 
 	if (error) {
 		return (
@@ -361,11 +394,7 @@ const ProfilePage = () => {
 										}}>
 											<Box sx={{ position: 'relative', mb: 1 }}>
 												<Avatar
-													src={
-														account?.imagePath
-															? (import.meta.env.VITE_API_URL + '/' + account.imagePath)
-															: "/default-avatar.jpg"
-													}
+													src={avatarSrc}
 													sx={{
 														width: 150,
 														height: 150,
@@ -516,10 +545,7 @@ const ProfilePage = () => {
 															fullWidth
 															disabled={!editMode}
 															variant={editMode ? "outlined" : "filled"}
-															InputProps={{
-																disableUnderline: !editMode,
-																style: { minHeight: '56px' }
-															}}
+															InputProps={getProfileFieldInputProps(editMode)}
 															sx={{
 																mb: 1,
 																'& .MuiFilledInput-root': {
@@ -544,10 +570,7 @@ const ProfilePage = () => {
 															InputLabelProps={{
 																shrink: true,
 															}}
-															InputProps={{
-																disableUnderline: !editMode,
-																style: { minHeight: '56px' }
-															}}
+															InputProps={getProfileFieldInputProps(editMode)}
 															inputProps={{
 																min: "1900-01-01",
 																max: dayjs().subtract(7, 'year').format('YYYY-MM-DD')
@@ -653,10 +676,7 @@ const ProfilePage = () => {
 															fullWidth
 															disabled={!editMode}
 															variant={editMode ? "outlined" : "filled"}
-															InputProps={{
-																disableUnderline: !editMode,
-																style: { minHeight: '56px' }
-															}}
+															InputProps={getProfileFieldInputProps(editMode)}
 															sx={{
 																'& .MuiFilledInput-root': {
 																	backgroundColor: editMode

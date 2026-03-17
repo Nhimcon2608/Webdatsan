@@ -28,12 +28,28 @@ const apiClient = axios.create({
 	},
 });
 
+function shouldAttachAuthToken(url) {
+	if (!url) {
+		return true;
+	}
+
+	return !["/auth/login", "/auth/register"].includes(url);
+}
+
 apiClient.interceptors.request.use(
 	(config) => {
 		startProgress();
 
+		if (config.data instanceof FormData) {
+			if (typeof config.headers?.setContentType === "function") {
+				config.headers.setContentType(undefined);
+			} else if (config.headers) {
+				delete config.headers["Content-Type"];
+			}
+		}
+
 		const token = localStorage.getItem("authToken");
-		if (token) {
+		if (token && shouldAttachAuthToken(config.url)) {
 			config.headers.Authorization = `Bearer ${token}`;
 		}
 		return config;
@@ -60,6 +76,12 @@ apiClient.interceptors.response.use(
 					break;
 
 				case 401:
+					if (shouldAttachAuthToken(error.config?.url)) {
+						localStorage.removeItem("authToken");
+						if (window.location.pathname !== "/login") {
+							window.location.href = "/login";
+						}
+					}
 					break;
 
 				case 404:

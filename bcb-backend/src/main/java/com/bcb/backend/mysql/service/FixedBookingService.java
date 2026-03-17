@@ -24,7 +24,6 @@ import com.bcb.backend.mysql.model.Reservation;
 import com.bcb.backend.mysql.model.ReservationDetail;
 import com.bcb.backend.mysql.model.ReservationDetailId;
 import com.bcb.backend.mysql.model.Voucher;
-import com.bcb.backend.mysql.repository.AccountRepository;
 import com.bcb.backend.mysql.repository.BadmintonCourtRepository;
 import com.bcb.backend.mysql.repository.BranchRepository;
 import com.bcb.backend.mysql.repository.ReservationDetailRepository;
@@ -39,7 +38,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class FixedBookingService {
 
-	private final AccountRepository accountRepository;
+	private final PlayerAccountService playerAccountService;
 	private final ReservationRepository reservationRepository;
 	private final ReservationDetailRepository reservationDetailRepository;
 	private final VoucherRepository voucherRepository;
@@ -49,9 +48,7 @@ public class FixedBookingService {
 	@Transactional
 	public List<String> createFixedBooking(String accountId, FixedBookingRequest req) {
 
-		Player player = accountRepository.findById(accountId)
-				.orElseThrow(() -> new RuntimeException("Account not found"))
-				.getPlayer();
+		Player player = playerAccountService.getPlayerForUserAccount(accountId);
 
 		Voucher voucher = null;
 		if (req.getVoucherId() != null && !req.getVoucherId().isBlank()) {

@@ -36,6 +36,10 @@ public class Branch {
     @Column(name = "bank_number")
     private String bankNumber;
 
+    @Lob
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "is_cooperated")
     private boolean isCooperated;
     /*
