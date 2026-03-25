@@ -76,7 +76,11 @@
   - Xóa `console.log("🧾 Gửi danh sách reservationIds:", reservationIds)` trong `CheckoutFixedPage.jsx`
   - _Requirements: 4.4, 6.1, 6.2_
 
-- [ ] 6. Triển khai luồng pending_confirmation — Backend
+- [x] 6. Triển khai luồng pending_confirmation — Backend
+
+
+
+
   - Thêm endpoint `PUT /reservations/{id}/confirm-payment` trong `ReservationController.java` (chỉ MANAGER)
   - Thêm endpoint `PUT /reservations/{id}/reject-payment` trong `ReservationController.java` (chỉ MANAGER)
   - Thêm method `confirmPayment(String id)` và `rejectPayment(String id)` trong `ReservationService.java`
@@ -94,6 +98,7 @@
   - **Validates: Requirements 5.1, 5.3, 5.4**
 
 - [ ] 7. Triển khai luồng pending_confirmation — Frontend
+
   - Cập nhật `CheckoutPage.jsx`: `handleConfirmPayment` gọi API cập nhật status sang `pending_confirmation` thay vì `waiting`
   - Cập nhật `CheckoutFixedPage.jsx`: `handleConfirmPayment` gọi API cập nhật status sang `pending_confirmation` thay vì `waiting`
   - Cập nhật `Reservation.jsx` (manager): thêm filter/tab "Chờ xác nhận thanh toán" cho status `pending_confirmation`

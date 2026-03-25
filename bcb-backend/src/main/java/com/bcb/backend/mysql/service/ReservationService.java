@@ -297,7 +297,7 @@ public class ReservationService {
 	}
 
 	public ReservationResponseDTO updateStatus(String id, String status) {
-		Set<String> validStatuses = Set.of("checked", "waiting", "cancel", "finish");
+		Set<String> validStatuses = Set.of("checked", "waiting", "cancel", "finish", "pending_confirmation");
 		if (!validStatuses.contains(status.toLowerCase())) {
 			throw new IllegalArgumentException("Trạng thái không hợp lệ: " + status);
 		}
@@ -307,6 +307,40 @@ public class ReservationService {
 
 		reservation.setStatus(status.toLowerCase());
 		reservationRepository.save(reservation);
+
+		return ReservationMapper.toDTO(reservation);
+	}
+
+	public ReservationResponseDTO confirmPayment(String id) {
+		Reservation reservation = reservationRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy đặt sân"));
+
+		if (!"pending_confirmation".equals(reservation.getStatus())) {
+			throw new IllegalStateException("Đặt sân không ở trạng thái chờ xác nhận thanh toán");
+		}
+
+		reservation.setStatus("waiting");
+		reservationRepository.save(reservation);
+
+		String playerAccountId = reservation.getPlayer().getAccount().getId();
+		sseService.sendToUser(playerAccountId, SSEEventType.PAYMENT_CONFIRMED, ReservationMapper.toDTO(reservation));
+
+		return ReservationMapper.toDTO(reservation);
+	}
+
+	public ReservationResponseDTO rejectPayment(String id) {
+		Reservation reservation = reservationRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy đặt sân"));
+
+		if (!"pending_confirmation".equals(reservation.getStatus())) {
+			throw new IllegalStateException("Đặt sân không ở trạng thái chờ xác nhận thanh toán");
+		}
+
+		reservation.setStatus("cancel");
+		reservationRepository.save(reservation);
+
+		String playerAccountId = reservation.getPlayer().getAccount().getId();
+		sseService.sendToUser(playerAccountId, SSEEventType.PAYMENT_REJECTED, ReservationMapper.toDTO(reservation));
 
 		return ReservationMapper.toDTO(reservation);
 	}

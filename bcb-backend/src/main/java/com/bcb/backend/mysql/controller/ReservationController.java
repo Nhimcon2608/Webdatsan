@@ -138,4 +138,16 @@ public class ReservationController {
 		return ResponseEntity.ok(reservationService.sendToManager(reservationId));
 	}
 
+	@PutMapping("/{id}/confirm-payment")
+	@PreAuthorize("hasRole('MANAGER')")
+	public ResponseEntity<ReservationResponseDTO> confirmPayment(@PathVariable String id) {
+		return ResponseEntity.ok(reservationService.confirmPayment(id));
+	}
+
+	@PutMapping("/{id}/reject-payment")
+	@PreAuthorize("hasRole('MANAGER')")
+	public ResponseEntity<ReservationResponseDTO> rejectPayment(@PathVariable String id) {
+		return ResponseEntity.ok(reservationService.rejectPayment(id));
+	}
+
 }
