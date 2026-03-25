@@ -34,11 +34,13 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 import UserLayout from "../../layouts/user/UserLayout";
 import reservationService from "../../services/reservationService";
+import { useSnackbar } from "../../../context/SnackbarContext";
 
 const CheckoutFixedPage = () => {
 	const theme = useTheme();
 	const navigate = useNavigate();
 	const location = useLocation();
+	const { showSnackbar } = useSnackbar();
 	const { search } = location;
 
 	const [timeLeft, setTimeLeft] = useState(600); // 10 phút
@@ -140,7 +142,6 @@ const CheckoutFixedPage = () => {
 
 		try {
 			setIsProcessing(true);
-			console.log("🧾 Gửi danh sách reservationIds:", reservationIds);
 			// ⚙️ Gọi API duy nhất để cập nhật trạng thái của cả 4 reservation cùng lúc
 			await reservationService.updateFixedBookingStatus(reservationIds, "waiting");
 
@@ -158,7 +159,7 @@ const CheckoutFixedPage = () => {
 			});
 		} catch (err) {
 			console.error("❌ Lỗi xác nhận thanh toán:", err);
-			alert("Có lỗi xảy ra khi xác nhận thanh toán: " + err.message);
+			showSnackbar("Có lỗi xảy ra khi xác nhận thanh toán: " + err.message, "error");
 			setIsProcessing(false);
 		}
 	};
@@ -177,7 +178,7 @@ const CheckoutFixedPage = () => {
 			navigate('/badminton-branchs');
 		} catch (err) {
 			console.error("❌ Lỗi hủy đặt cố định:", err);
-			alert("Có lỗi xảy ra khi hủy: " + err.message);
+			showSnackbar("Có lỗi xảy ra khi hủy: " + err.message, "error");
 			setIsProcessing(false);
 		}
 	};

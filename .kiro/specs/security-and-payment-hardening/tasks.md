@@ -37,13 +37,23 @@
   - Annotate: `// Feature: security-and-payment-hardening, Property 2 & 3`
   - **Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5**
 
-- [ ] 3. Cấu hình CORS đọc từ biến môi trường
+- [x] 3. Cấu hình CORS đọc từ biến môi trường
+
+
+
+
+
   - Thêm `@Value("${app.cors.allowed-origins:http://localhost:5173}")` vào `SecurityConfig.java`
   - Cập nhật `corsConfigurationSource()` để parse danh sách origins từ chuỗi phân cách bằng dấu phẩy
   - Thêm `app.cors.allowed-origins=${ALLOWED_ORIGINS:http://localhost:5173}` vào `application.properties`
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4. Kết nối api.jsx interceptor với SnackbarContext
+- [x] 4. Kết nối api.jsx interceptor với SnackbarContext
+
+
+
+
+
   - Tạo cơ chế callback (event emitter hoặc exported setter) để `api.jsx` có thể gọi `showSnackbar` từ ngoài React tree
   - Cập nhật `SnackbarContext.jsx` để đăng ký callback khi mount
   - Cập nhật response interceptor trong `api.jsx`: thay các `break` rỗng cho case 400, 403, 404 bằng gọi `showSnackbar` với message tương ứng
@@ -56,7 +66,11 @@
   - Annotate: `// Feature: security-and-payment-hardening, Property 4: Mọi lỗi HTTP đều hiển thị qua Snackbar`
   - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
 
-- [ ] 5. Thay alert() bằng Snackbar trong CheckoutFixedPage và CheckoutPage
+- [x] 5. Thay alert() bằng Snackbar trong CheckoutFixedPage và CheckoutPage
+
+
+
+
   - Trong `CheckoutFixedPage.jsx`: thay `alert(...)` trong `handleConfirmPayment` và `confirmCancelPayment` bằng `useSnackbar`
   - Trong `CheckoutPage.jsx`: kiểm tra và thay bất kỳ `alert()` nào bằng Snackbar
   - Xóa `console.log("🧾 Gửi danh sách reservationIds:", reservationIds)` trong `CheckoutFixedPage.jsx`

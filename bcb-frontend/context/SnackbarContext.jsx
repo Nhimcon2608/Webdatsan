@@ -1,5 +1,6 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Snackbar, Alert } from '@mui/material';
+import { registerSnackbar } from '../src/services/snackbarBridge.js';
 
 const SnackbarContext = createContext();
 
@@ -15,6 +16,11 @@ export const SnackbarProvider = ({ children }) => {
     const showSnackbar = (message, severity = 'info') => {
         setSnackbar({ open: true, message, severity });
     };
+
+    // Register showSnackbar so api.jsx (outside React tree) can call it
+    useEffect(() => {
+        registerSnackbar(showSnackbar);
+    }, []);
 
     const handleClose = () => {
         setSnackbar(prev => ({ ...prev, open: false }));

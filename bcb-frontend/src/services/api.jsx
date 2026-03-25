@@ -1,6 +1,7 @@
 import axios from "axios";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css"
+import { showSnackbar } from "./snackbarBridge.js";
 
 let requestCount = 0;
 
@@ -73,6 +74,7 @@ apiClient.interceptors.response.use(
 			switch (error.response.status) {
 
 				case 400:
+					showSnackbar(error.response.data?.message || 'Dữ liệu không hợp lệ', 'error');
 					break;
 
 				case 401:
@@ -84,10 +86,12 @@ apiClient.interceptors.response.use(
 					}
 					break;
 
-				case 404:
+				case 403:
+					showSnackbar('Bạn không có quyền thực hiện thao tác này', 'error');
 					break;
-				
-				case 403: 
+
+				case 404:
+					showSnackbar('Không tìm thấy dữ liệu', 'warning');
 					break;
 
 				default:
