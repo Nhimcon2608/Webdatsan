@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -43,12 +44,20 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/accounts/change-password").authenticated()
+                        // Public auth endpoints only — không dùng /auth/** quá rộng
+                        .requestMatchers("/auth/login", "/auth/register").permitAll()
+                        // MoMo IPN webhook không cần auth
                         .requestMatchers("/payment/momo/ipn").permitAll()
-                        // .anyRequest().authenticated())
-                        .anyRequest().permitAll())
+                        // Public GET endpoints cho branches, courts, prices, reviews
+                        .requestMatchers(HttpMethod.GET, "/branches/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/badminton-courts/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/prices/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/price-types/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
+                        // Chỉ ADMIN mới được xem danh sách blacklisted tokens
+                        .requestMatchers("/auth/blacklisted-tokens").hasRole("ADMIN")
+                        // Tất cả các request còn lại phải xác thực
+                        .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);

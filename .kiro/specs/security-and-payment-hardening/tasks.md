@@ -17,7 +17,12 @@
   - Annotate: `// Feature: security-and-payment-hardening, Property 1: Route bảo vệ không redirect khi đang loading`
   - **Validates: Requirements 1.1, 1.2**
 
-- [ ] 2. Cập nhật SecurityConfig backend — bảo vệ các endpoint
+- [x] 2. Cập nhật SecurityConfig backend — bảo vệ các endpoint
+
+
+
+
+
   - Thay `anyRequest().permitAll()` bằng `anyRequest().authenticated()` trong `SecurityConfig.java`
   - Khai báo rõ các public endpoint: `/auth/login`, `/auth/register`, `/payment/momo/ipn`, các GET public cho branches/courts/prices/reviews
   - Thêm rule `.requestMatchers("/auth/blacklisted-tokens").hasRole("ADMIN")`
