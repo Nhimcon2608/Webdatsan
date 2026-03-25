@@ -1,6 +1,11 @@
 # Kế Hoạch Triển Khai
 
-- [ ] 1. Sửa ProtectedRoute và RoleBasedRoute để xử lý loading state
+- [x] 1. Sửa ProtectedRoute và RoleBasedRoute để xử lý loading state
+
+
+
+
+
   - Cập nhật `ProtectedRoute.jsx` để đọc `loading` từ `useAuth()` và render màn hình loading thay vì redirect ngay
   - Cập nhật `RoleBasedRoute.jsx` để đọc `loading` từ `useAuth()` và render màn hình loading khi `loading=true`
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
