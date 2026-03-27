@@ -280,13 +280,13 @@ ON DUPLICATE KEY UPDATE
   `is_activated` = VALUES(`is_activated`);
   
 INSERT INTO `account` (`id`, `user_name`, `password`, `role`, `phone_number`, `is_activated`) VALUES
-('acc_admin_01', 'trongphuoc', '$2a$10$8.UnVuG9HHgffUDAlk8KnO25fS5v.V1fC.7s6TfB9B7.uE6Vn1nI6', 'ADMIN', '0901234567', 1),
-('acc_owner_01', 'quangthien', '$2a$10$8.UnVuG9HHgffUDAlk8KnO25fS5v.V1fC.7s6TfB9B7.uE6Vn1nI6', 'USER', '0911222333', 1),
-('acc_owner_02', 'nhuquynh_owner', '$2a$10$8.UnVuG9HHgffUDAlk8KnO25fS5v.V1fC.7s6TfB9B7.uE6Vn1nI6', 'USER', '0988111222', 1), -- Tài khoản chủ sân cho Như Quỳnh
-('acc_player_01', 'nhuquynh', '$2a$10$8.UnVuG9HHgffUDAlk8KnO25fS5v.V1fC.7s6TfB9B7.uE6Vn1nI6', 'USER', '0988111222', 1),
-('acc_player_02', 'minhtam', '$2a$10$8.UnVuG9HHgffUDAlk8KnO25fS5v.V1fC.7s6TfB9B7.uE6Vn1nI6', 'USER', '0977333444', 1),
-('acc_player_03', 'thanhha', '$2a$10$8.UnVuG9HHgffUDAlk8KnO25fS5v.V1fC.7s6TfB9B7.uE6Vn1nI6', 'USER', '0944555666', 1),
-('acc_player_04', 'hoanglong', '$2a$10$8.UnVuG9HHgffUDAlk8KnO25fS5v.V1fC.7s6TfB9B7.uE6Vn1nI6', 'USER', '0933444555', 1);
+('acc_admin_01', 'trongphuoc', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'ADMIN', '0901234567', 1),
+('acc_owner_01', 'quangthien', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0911222333', 1),
+('acc_owner_02', 'nhuquynh_owner', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0988111222', 1), -- Tài khoản chủ sân cho Như Quỳnh
+('acc_player_01', 'nhuquynh', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0988111222', 1),
+('acc_player_02', 'minhtam', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0977333444', 1),
+('acc_player_03', 'thanhha', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0944555666', 1),
+('acc_player_04', 'hoanglong', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0933444555', 1);
 
 INSERT INTO `player` (`id`, `full_name`, `date_of_birth`, `gender`, `email`, `account_id`) VALUES
 ('pl_admin', 'Nguyễn Trọng Phước', '2004-06-12', 1, 'trongphuoc@bcb.vn', 'acc_admin_01'),
