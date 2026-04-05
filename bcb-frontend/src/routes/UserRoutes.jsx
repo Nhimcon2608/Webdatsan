@@ -17,6 +17,7 @@ import TemporaryRecruitmentDetailSharePage from '../pages/user/TemporaryRecruitm
 import TemporaryRecruitment from '../pages/user/TemporaryRecruitment';
 import CheckoutFixedPage from '../pages/user/CheckoutFixedPage';
 import PaymentResult from '../pages/user/PaymentResult';
+import DemoPaymentPage from '../pages/user/DemoPaymentPage';
 
 const withUserProtection = (Component) => (
 	<ProtectedRoute>
@@ -73,6 +74,11 @@ const userRoutes = [
 		key="payment-result"
 		path="/payment-result"
 		element={<PaymentResult/>}
+	/>,
+	<Route
+		key="demo-payment"
+		path="/demo-payment"
+		element={withUserProtection(DemoPaymentPage)}
 	/>,
 	<Route
 		key="checkout-fixed"

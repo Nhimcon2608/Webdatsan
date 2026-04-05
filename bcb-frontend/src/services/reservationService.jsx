@@ -156,10 +156,13 @@ const reservationService = {
 	},
 	updateReservationStatus: async (reservationId, status, token) => {
 		try {
+			const config = token
+				? { headers: { Authorization: `Bearer ${token}` } }
+				: undefined;
 			const response = await apiClient.put(
 				`/reservations/${reservationId}/status`,
 				{ status },
-				{ headers: { Authorization: `Bearer ${token}` } }
+				config
 			);
 			return response.data;
 		} catch (error) {

@@ -96,8 +96,8 @@ import reservationDetailService from "../../services/reservationDetailService";
 import userService from "../../services/userService";
 import authService from "../../services/authService";
 import priceService from "../../services/priceService";
-import paymentService from "../../services/paymentService"
 import { useAuth } from "../../../context/AuthContext";
+import { useSnackbar } from "../../../context/SnackbarContext";
 
 import UserLayout from "../../layouts/user/UserLayout";
 import NotFound from "../NotFound";
@@ -119,6 +119,7 @@ const isWeekendDay = (date) => {
 const BranchDetail = () => {
 	const navigate = useNavigate();
 	const { user, login } = useAuth();
+	const { showSnackbar } = useSnackbar();
 	// const theme = useTheme();
 
 	const [selectedCourtIndex, setSelectedCourtIndex] = useState(0);
@@ -148,6 +149,7 @@ const BranchDetail = () => {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(null);
 	const [showBookingSummary, setShowBookingSummary] = useState(false);
+	const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("momo");
 	const [refreshFlag, setRefreshFlag] = useState(false);
 	const [bookingTab, setBookinTab] = useState('1');
 	const [priceTables, setPriceTables] = useState({
@@ -162,6 +164,7 @@ const BranchDetail = () => {
 	const [fixedBookedSlots, setFixedBookedSlots] = useState([]);
 	const [fixedLoading, setFixedLoading] = useState(false);
 	const [showFixedBookingSummary, setShowFixedBookingSummary] = useState(false);
+	const [selectedFixedPaymentMethod, setSelectedFixedPaymentMethod] = useState("momo");
 	const [selectedCourts, setSelectedCourts] = useState([]);
 	const [selectedDayTab, setSelectedDayTab] = useState(0);
 	const [weekDaysOrder, setWeekDaysOrder] = useState([]);
@@ -1068,73 +1071,106 @@ const BranchDetail = () => {
 	};
 
 	const confirmBooking = async () => {
-		const groupedSlots = selectedSlots.reduce((acc, slot) => {
-			if (!acc[slot.courtId]) {
-				acc[slot.courtId] = [];
-			}
-			acc[slot.courtId].push(slot.timeSlotId);
-			return acc;
-		}, {});
+		let createdReservationId = null;
 
-		// console.log(groupedSlots);
+		try {
+			const groupedSlots = selectedSlots.reduce((acc, slot) => {
+				if (!acc[slot.courtId]) {
+					acc[slot.courtId] = [];
+				}
+				acc[slot.courtId].push(slot.timeSlotId);
+				return acc;
+			}, {});
 
-		const bookingInfo = Object.entries(groupedSlots).map(([courtId, slots]) => {
-			const court = courts.find((c) => c.id === courtId);
-			const sortedSlots = [...slots].sort();
+			const bookingInfo = Object.entries(groupedSlots).map(([courtId, slots]) => {
+				const court = courts.find((c) => c.id === courtId);
+				const sortedSlots = [...slots].sort();
 
-			const bookingSlots = sortedSlots.map((slotId) => {
-				const timeSlot = timeSlots.find((slot) => slot.id === slotId);
+				const bookingSlots = sortedSlots.map((slotId) => {
+					const timeSlot = timeSlots.find((slot) => slot.id === slotId);
+					return {
+						startTime: timeSlot.startLabel,
+						endTime: timeSlot.endLabel,
+					};
+				});
+
 				return {
-					startTime: timeSlot.startLabel,
-					endTime: timeSlot.endLabel,
+					courtId: courtId,
+					courtName: court.ordinalNumber,
+					slots: bookingSlots,
 				};
 			});
 
-			return {
-				courtId: courtId,
-				courtName: court.ordinalNumber,
-				slots: bookingSlots,
+			const reservationData = {
+				bookAt: formatDate(selectedDate),
+				totalPrice: calculateDiscountedPrice(),
+				deposit:
+					calculateDiscountedPrice() - (calculateDiscountedPrice() * 50) / 100,
+				status: "awaiting_payment",
+				playerId: profileData.id,
+				voucherId: selectedVoucher ? selectedVoucher.id : null,
+				branchId: branchId,
 			};
-		});
 
-		let reservationData = {
-			bookAt: formatDate(selectedDate),
-			totalPrice: calculateDiscountedPrice(),
-			deposit:
-				calculateDiscountedPrice() - (calculateDiscountedPrice() * 50) / 100,
-			status: "awaiting_payment",
-			playerId: profileData.id,
-			voucherId: selectedVoucher ? selectedVoucher.id : null,
-			branchId: branchId,
-		};
+			const reservationResponse = await reservationService.postReservation(reservationData);
+			createdReservationId = reservationResponse.id;
+			await reservationService.scheduleCancellation(reservationResponse.id);
+			const rentalDetails = getRentalDetails(bookingInfo, reservationResponse.id);
 
-		const reservationResponse = await reservationService.postReservation(reservationData);
-		// console.log('Reservation form data:', reservationResponse);
-		await reservationService.scheduleCancellation(reservationResponse.id);
-		const rentalDetails = getRentalDetails(bookingInfo, reservationResponse.id);
-		// console.log(rentalDetails);
-
-		try {
 			for (const detail of rentalDetails) {
-				// console.log('detail:', detail);
 				await reservationDetailService.postReservationDetail(detail);
-				// console.log('Reservation detail successfully sent:', detail);
 			}
+
+			if (selectedPaymentMethod === "cod") {
+				await reservationService.updateReservationStatus(reservationResponse.id, "waiting");
+				navigate(`/booking-successfully`, {
+					state: {
+						branchDetail,
+						reservationId: reservationResponse.id,
+					},
+				});
+			} else if (selectedPaymentMethod === "bank") {
+				const oneTimeSession = crypto.randomUUID();
+				sessionStorage.setItem("checkoutSession", oneTimeSession);
+				navigate(`/checkout?session=${oneTimeSession}`, {
+					state: {
+						branchDetail,
+						reservationId: reservationResponse.id,
+						reservationData: { ...reservationData, id: reservationResponse.id },
+						reservationDetails: bookingInfo,
+						selectedVoucher,
+					},
+				});
+			} else {
+				navigate(`/demo-payment?resIds=${reservationResponse.id}&type=single`, {
+					state: {
+						branchDetail,
+						amount: reservationData.deposit,
+						title: "Thanh toán MoMo",
+						description: "Quét mã QR bằng ví MoMo để hoàn tất đặt cọc.",
+						paymentContent: `MOMO ${reservationResponse.id}`,
+					},
+				});
+			}
+			setSelectedSlots([]);
+			setShowBookingSummary(false);
 		} catch (error) {
-			console.error("Error sending reservation details:", error);
-			throw error;
+			console.error("Error confirming booking:", error);
+
+			if (createdReservationId) {
+				try {
+					await reservationService.cancelReservation(createdReservationId);
+				} catch (rollbackError) {
+					console.error("Error rolling back reservation after payment failure:", rollbackError);
+				}
+			}
+
+			showSnackbar(
+				(error.response?.data?.message || error.message || "Khong the khoi tao thanh toan MoMo.")
+					+ (error.config?.url ? ` [${error.config.url}]` : ""),
+				"error"
+			);
 		}
-
-		setSelectedSlots([]);
-		setShowBookingSummary(false);
-
-		const paymentRequest = {
-			amount: reservationData.deposit,
-			resIds: [reservationResponse.id],
-			orderInfo: "Đặt cọc cho lịch đặt sân: " + reservationResponse.id,
-		}
-
-		await paymentService.payWithMomo(paymentRequest);
 	};
 
 	// console.log(selectedDate);
@@ -1319,12 +1355,41 @@ const BranchDetail = () => {
 			console.log(payload);
 
 			// 9. Chuyển sang trang thanh toán
-			const paymentRequest = {
-				amount: payload.totalPrice,
-				resIds: reservationIds,
-				orderInfo: "Thanh toán lịch đặt cố định",
-			};
-			await paymentService.payWithMomo(paymentRequest);
+			if (selectedFixedPaymentMethod === "cod") {
+				await reservationService.updateFixedBookingStatus(reservationIds, "waiting");
+				navigate("/booking-successfully", {
+					state: {
+						branchDetail,
+						reservationIds,
+						isFixedBooking: true,
+						totalPrice: finalTotalPrice,
+					},
+				});
+			} else if (selectedFixedPaymentMethod === "bank") {
+				const oneTimeSession = crypto.randomUUID();
+				sessionStorage.setItem("checkoutSession", oneTimeSession);
+				navigate(`/checkout-fixed?session=${oneTimeSession}`, {
+					state: {
+						branchDetail,
+						reservationIds,
+						totalPrice: finalTotalPrice,
+						originalPrice: totalFor4Weeks,
+						selectedVoucher,
+						weeklySchedule,
+						startDate: format(fixedBookingDate, "dd/MM/yyyy"),
+					},
+				});
+			} else {
+				navigate(`/demo-payment?resIds=${reservationIds.join(",")}&type=fixed`, {
+					state: {
+						branchDetail,
+						amount: finalTotalPrice,
+						title: "Thanh toán MoMo",
+						description: "Quét mã QR bằng ví MoMo để thanh toán lịch đặt sân cố định.",
+						paymentContent: `MOMO FIXED ${reservationIds[0]}`,
+					},
+				});
+			}
 			// const oneTimeSession = crypto.randomUUID();
 			// sessionStorage.setItem("checkoutSession", oneTimeSession);
 
@@ -1767,6 +1832,35 @@ const BranchDetail = () => {
 							</Box>
 						</Box>
 
+						<Box sx={{ mb: 3 }}>
+							<Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1.5 }}>
+								Chọn phương thức thanh toán
+							</Typography>
+							<Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 1.5 }}>
+								{[
+									{ id: "cod", label: "COD", desc: "Xác nhận nhanh tại sân" },
+									{ id: "bank", label: "Ngân hàng", desc: "Chuyển khoản và quét QR" },
+									{ id: "momo", label: "MoMo", desc: "Thanh toán bằng ví MoMo" },
+								].map((method) => (
+									<Paper
+										key={method.id}
+										onClick={() => setSelectedPaymentMethod(method.id)}
+										variant="outlined"
+										sx={{
+											p: 2,
+											cursor: "pointer",
+											borderRadius: 2,
+											borderColor: selectedPaymentMethod === method.id ? "primary.main" : "divider",
+											bgcolor: selectedPaymentMethod === method.id ? "primary.main" + "10" : "background.paper",
+										}}
+									>
+										<Typography fontWeight={800}>{method.label}</Typography>
+										<Typography variant="body2" color="text.secondary">{method.desc}</Typography>
+									</Paper>
+								))}
+							</Box>
+						</Box>
+
 						<Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
 							<Button
 								variant="outlined"
@@ -2061,6 +2155,35 @@ const BranchDetail = () => {
 								💳 Đặt sân cố định thanh toán <strong>100%</strong> ngay - Không cần thanh toán thêm tại sân
 							</Typography>
 						</Alert>
+
+						<Box sx={{ mt: 3 }}>
+							<Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1.5 }}>
+								Ch?n ph??ng th?c thanh to?n
+							</Typography>
+							<Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 1.5 }}>
+								{[
+									{ id: "cod", label: "COD", desc: "X?c nh?n tr?c ti?p" },
+									{ id: "bank", label: "Ng?n h?ng", desc: "Chuy?n kho?n v? qu?t QR" },
+									{ id: "momo", label: "MoMo", desc: "Thanh to?n b?ng v? MoMo" },
+								].map((method) => (
+									<Paper
+										key={method.id}
+										onClick={() => setSelectedFixedPaymentMethod(method.id)}
+										variant="outlined"
+										sx={{
+											p: 2,
+											cursor: "pointer",
+											borderRadius: 2,
+											borderColor: selectedFixedPaymentMethod === method.id ? "primary.main" : "divider",
+											bgcolor: selectedFixedPaymentMethod === method.id ? "primary.main" + "10" : "background.paper",
+										}}
+									>
+										<Typography fontWeight={800}>{method.label}</Typography>
+										<Typography variant="body2" color="text.secondary">{method.desc}</Typography>
+									</Paper>
+								))}
+							</Box>
+						</Box>
 
 						{/* Actions */}
 						<Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 4 }}>
