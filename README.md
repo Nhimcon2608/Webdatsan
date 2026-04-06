@@ -1,6 +1,5 @@
 # BCB Web - Huong Dan Chay Du An
-
-Huong dan nay dung cho repo:
+//Huong dan nay dung cho repo : 
 - `bcb-backend` (Spring Boot)
 - `bcb-frontend` (React + Vite)
 
