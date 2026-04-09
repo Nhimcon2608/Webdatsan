@@ -58,6 +58,12 @@ public class AccountService {
                 .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND_USERNAME + username));
     }
 
+    public List<AccountResponse> getAllAccounts() {
+        return accountRepo.findAll().stream()
+                .map(AccountMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
     public List<String> getUsernamesByPhoneNumber(String phoneNumber) {
         return accountRepo.findByPhoneNumber(phoneNumber)
                 .stream()
