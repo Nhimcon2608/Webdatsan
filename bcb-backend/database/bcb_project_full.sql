@@ -251,8 +251,8 @@ CREATE TABLE `temporary_recruitment_saved` (
 -- Optional basic seed
 INSERT INTO `price_type` (`id`, `type`)
 VALUES
-  ('pricetype_weekday', 'WEEKDAY'),
-  ('pricetype_weekend', 'WEEKEND')
+  ('pricetype_weekday', 'EOW'),
+  ('pricetype_weekend', 'BOW')
 ON DUPLICATE KEY UPDATE `type` = VALUES(`type`);
 
 -- Admin account: username=admin, password=Admin@123
@@ -281,8 +281,8 @@ ON DUPLICATE KEY UPDATE
   
 INSERT INTO `account` (`id`, `user_name`, `password`, `role`, `phone_number`, `is_activated`) VALUES
 ('acc_admin_01', 'trongphuoc', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'ADMIN', '0901234567', 1),
-('acc_owner_01', 'quangthien', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0911222333', 1),
-('acc_owner_02', 'nhuquynh_owner', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0988111222', 1), -- Tài khoản chủ sân cho Như Quỳnh
+('acc_owner_01', 'quangthien', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'MANAGER', '0911222333', 1),
+('acc_owner_02', 'nhuquynh_owner', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'MANAGER', '0988111222', 1), -- Tài khoản chủ sân cho Như Quỳnh
 ('acc_player_01', 'nhuquynh', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0988111222', 1),
 ('acc_player_02', 'minhtam', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0977333444', 1),
 ('acc_player_03', 'thanhha', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'USER', '0944555666', 1),

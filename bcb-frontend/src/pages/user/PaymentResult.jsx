@@ -30,6 +30,8 @@ const PaymentResult = () => {
     const [params] = useSearchParams();
     const navigate = useNavigate();
     const orderId = params.get("orderId");
+    const resIdsParam = params.get("resIds");
+    const redirectResultCode = params.get("resultCode");
     const [reservationId, setReservationId] = useState(null);
     const [status, setStatus] = useState("loading");
     const [reservationData, setReservationData] = useState({});
@@ -49,7 +51,9 @@ const PaymentResult = () => {
                     return;
                 }
 
-                const ids = await paymentService.getResIdsByOrderId(orderId);
+                const ids = resIdsParam
+                    ? resIdsParam.split(",").map(id => id.trim()).filter(Boolean)
+                    : await paymentService.getResIdsByOrderId(orderId);
                 if (!ids || ids.length === 0) {
                     if (isMounted) setStatus("error");
                     return;
@@ -73,12 +77,28 @@ const PaymentResult = () => {
                 const firstId = ids[0];
                 setReservationId(firstId);
 
-                const reservation = await reservationService.getReservationById(firstId);
+                let reservation = await reservationService.getReservationById(firstId);
+                if (!isMounted) return;
+
+                if (redirectResultCode === "0" && reservation.status === "awaiting_payment") {
+                    for (let attempt = 0; attempt < 4; attempt++) {
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        if (!isMounted) return;
+
+                        reservation = await reservationService.getReservationById(firstId);
+                        if (reservation.status !== "awaiting_payment") {
+                            break;
+                        }
+                    }
+                }
+
                 if (!isMounted) return;
 
                 setReservationData(reservation);
 
-                if (reservation.status === "waiting") {
+                if (redirectResultCode && redirectResultCode !== "0") {
+                    setStatus("failed");
+                } else if (reservation.status === "waiting") {
                     setStatus("success");
                 } else if (reservation.status === "awaiting_payment") {
                     setStatus("pending");
@@ -119,7 +139,7 @@ const PaymentResult = () => {
         return () => {
             isMounted = false;
         };
-    }, [orderId]);
+    }, [orderId, redirectResultCode, resIdsParam]);
 
 
     const handleGoBranchs = () => {
