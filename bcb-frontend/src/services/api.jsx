@@ -87,7 +87,7 @@ apiClient.interceptors.response.use(
 					break;
 
 				case 403:
-					showSnackbar('Bạn không có quyền thực hiện thao tác này', 'error');
+					showSnackbar(error.response.data?.message || 'Bạn không có quyền thực hiện thao tác này', 'error');
 					break;
 
 				case 404:

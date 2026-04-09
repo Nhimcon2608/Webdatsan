@@ -3,7 +3,7 @@ package com.bcb.backend.mysql.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.bcb.backend.mysql.dto.request.PaymentRequest;
 import com.bcb.backend.mysql.model.PaymentSession;
@@ -26,49 +27,50 @@ public class MoMoController {
 
     private final MomoService momoService;
     private final FixedBookingService fixedBookingService;
-    private final RedisTemplate<String, Object> redisTemplate;
 
     @PostMapping("/create")
     public ResponseEntity<?> createPayment(@RequestBody PaymentRequest paymentRequest) {
         return ResponseEntity.ok(momoService.createPayment(paymentRequest));
     }
 
-    @PostMapping("/ipn")
-    public ResponseEntity<String> ipn(@RequestBody Map<String, Object> payload) {
-        System.out.println(payload);
+    @PostMapping("/demo/confirm")
+    public ResponseEntity<Void> confirmDemoPayment(@RequestBody Map<String, Object> payload) {
+        String orderId = payload.get("orderId") == null ? null : payload.get("orderId").toString();
+        int resultCode = payload.get("resultCode") == null ? -1 : Integer.parseInt(payload.get("resultCode").toString());
 
-        if (!momoService.verifyIpnSignature(payload)) {
-            return ResponseEntity.ok("IGNORED");
+        if (orderId == null || orderId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order ID is required");
         }
 
-        String orderId = payload.get("orderId").toString();
-        int resultCode = Integer.parseInt(payload.get("resultCode").toString());
-        PaymentSession session = (PaymentSession) redisTemplate.opsForValue()
-                .get("payment:" + orderId);
-
-        if (session == null) {
-            return ResponseEntity.ok("IGNORED");
+        PaymentSession session = momoService.getPaymentSession(orderId);
+        if (!momoService.isValidPaymentCallback(orderId, session)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment session not found");
         }
-        System.out.println(session.getReservationIds());
+
+        if ("SUCCESS".equals(session.getStatus()) || "FAILED".equals(session.getStatus())) {
+            return ResponseEntity.noContent().build();
+        }
 
         if (resultCode == 0) {
             fixedBookingService.changeStatus(session.getReservationIds(), "waiting");
+            session.setStatus("SUCCESS");
         } else {
             fixedBookingService.changeStatus(session.getReservationIds(), "cancel");
+            session.setStatus("FAILED");
         }
 
-        return ResponseEntity.ok("OK");
+        momoService.savePaymentSession(orderId, session);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/resIds-of/{orderId}")
     public ResponseEntity<List<String>> getResIdsByOrderId(@PathVariable String orderId) {
-        PaymentSession session = (PaymentSession) redisTemplate.opsForValue()
-                .get("payment:" + orderId);
+        PaymentSession session = momoService.getPaymentSession(orderId);
 
         if (session == null) {
             return ResponseEntity.ok(null);
-        } else {
-            return ResponseEntity.ok(session.getReservationIds());
         }
+
+        return ResponseEntity.ok(session.getReservationIds());
     }
 }

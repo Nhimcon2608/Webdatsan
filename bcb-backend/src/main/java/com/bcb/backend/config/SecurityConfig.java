@@ -52,7 +52,8 @@ public class SecurityConfig {
                         // Public auth endpoints only — không dùng /auth/** quá rộng
                         .requestMatchers("/auth/login", "/auth/register").permitAll()
                         // MoMo IPN webhook không cần auth
-                        .requestMatchers("/payment/momo/ipn").permitAll()
+                        .requestMatchers("/payment/**").permitAll()
+                        .requestMatchers("/api/payment/**").permitAll()
                         // Public GET endpoints cho branches, courts, prices, reviews
                         .requestMatchers(HttpMethod.GET, "/branches/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/badminton-courts/**").permitAll()

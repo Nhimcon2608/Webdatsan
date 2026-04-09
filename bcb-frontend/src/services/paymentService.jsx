@@ -4,8 +4,13 @@ const paymentService = {
 
     payWithMomo: async (paymentRequest) => {
         const res = await apiClient.post('payment/momo/create', paymentRequest);
-        // console.log(res);
-        window.location.href = res.data.payUrl;
+        const payUrl = res?.data?.payUrl;
+
+        if (!payUrl) {
+            throw new Error('MoMo không trả về đường dẫn thanh toán hợp lệ');
+        }
+
+        window.location.href = payUrl;
     },
     
     getResIdsByOrderId: async (orderId) => {
@@ -16,6 +21,18 @@ const paymentService = {
 			console.error(`Error fetching ids: `, error);
 			throw error;
 		}
+    },
+
+    confirmDemoPayment: async (orderId, resultCode) => {
+        try {
+            await apiClient.post('payment/momo/demo/confirm', {
+                orderId,
+                resultCode,
+            });
+        } catch (error) {
+            console.error('Error confirming demo payment:', error);
+            throw error;
+        }
     }
 }
 
