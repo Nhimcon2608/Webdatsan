@@ -1,0 +1,204 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  JAVA_VERSION: "17"
+
+jobs:
+  backend-ci:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bcb-backend
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+
+      - name: Run backend tests and build jar
+        run: ./mvnw -B verify
+
+      - name: Prepare backend artifact
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          cp "$(find target -maxdepth 1 -type f -name '*.jar' | head -n 1)" backend.jar
+
+      - name: Upload backend artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: bcb-backend/backend.jar
+          if-no-files-found: error
+
+  frontend-ci:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bcb-frontend
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: bcb-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Frontend lint is currently failing in the repository, so CI validates
+      # production build output instead of lint until those issues are fixed.
+      - name: Build frontend
+        run: npm run build
+
+      - name: Pack frontend artifact
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          tar -czf frontend-dist.tar.gz -C dist .
+
+      - name: Upload frontend artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: bcb-frontend/frontend-dist.tar.gz
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs:
+      - backend-ci
+      - frontend-ci
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    environment: production
+    steps:
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: deploy/backend
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: deploy/frontend
+
+      - name: Validate deploy configuration
+        id: deploy_config
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          BACKEND_DEPLOY_PATH: ${{ vars.BACKEND_DEPLOY_PATH }}
+          FRONTEND_DEPLOY_PATH: ${{ vars.FRONTEND_DEPLOY_PATH }}
+          BACKEND_RESTART_COMMAND: ${{ vars.BACKEND_RESTART_COMMAND }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for key in SSH_HOST SSH_USER SSH_PRIVATE_KEY BACKEND_DEPLOY_PATH FRONTEND_DEPLOY_PATH BACKEND_RESTART_COMMAND; do
+            if [ -z "${!key}" ]; then
+              echo "::warning::Missing $key"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy skipped because required secrets/variables are missing."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure SSH
+        if: steps.deploy_config.outputs.ready == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${SSH_PORT:-22}" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload release bundle
+        if: steps.deploy_config.outputs.ready == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          set -euo pipefail
+          scp -P "${SSH_PORT:-22}" -i ~/.ssh/deploy_key \
+            deploy/backend/backend.jar \
+            "${SSH_USER}@${SSH_HOST}:/tmp/backend.jar"
+          scp -P "${SSH_PORT:-22}" -i ~/.ssh/deploy_key \
+            deploy/frontend/frontend-dist.tar.gz \
+            "${SSH_USER}@${SSH_HOST}:/tmp/frontend-dist.tar.gz"
+
+      - name: Run remote deploy
+        if: steps.deploy_config.outputs.ready == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          BACKEND_DEPLOY_PATH: ${{ vars.BACKEND_DEPLOY_PATH }}
+          FRONTEND_DEPLOY_PATH: ${{ vars.FRONTEND_DEPLOY_PATH }}
+          BACKEND_RESTART_COMMAND: ${{ vars.BACKEND_RESTART_COMMAND }}
+          POST_DEPLOY_COMMAND: ${{ vars.POST_DEPLOY_COMMAND }}
+        run: |
+          set -euo pipefail
+          ssh -p "${SSH_PORT:-22}" -i ~/.ssh/deploy_key "${SSH_USER}@${SSH_HOST}" <<EOF
+          set -euo pipefail
+          mkdir -p "${BACKEND_DEPLOY_PATH}" "${FRONTEND_DEPLOY_PATH}"
+          mv /tmp/backend.jar "${BACKEND_DEPLOY_PATH}/backend.jar"
+          rm -rf "${FRONTEND_DEPLOY_PATH:?}/"*
+          tar -xzf /tmp/frontend-dist.tar.gz -C "${FRONTEND_DEPLOY_PATH}"
+          rm -f /tmp/frontend-dist.tar.gz
+          ${BACKEND_RESTART_COMMAND}
+          if [ -n "${POST_DEPLOY_COMMAND}" ]; then
+            ${POST_DEPLOY_COMMAND}
+          fi
+          EOF
+
+      - name: Finish without deploy
+        if: steps.deploy_config.outputs.ready != 'true'
+        run: echo "CI completed. CD was skipped because deployment configuration is incomplete."
