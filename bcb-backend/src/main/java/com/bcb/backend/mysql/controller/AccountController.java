@@ -33,6 +33,12 @@ public class AccountController {
 		this.accountService = accountService;
 	}
 
+	@PreAuthorize("hasAuthority('ADMIN')")
+	@GetMapping
+	public ResponseEntity<?> getAllAccounts() {
+		return ResponseEntity.ok(accountService.getAllAccounts());
+	}
+
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/me")
 	public ResponseEntity<?> getAccountByUsername() {
@@ -89,7 +95,7 @@ public class AccountController {
 	}
 
 	// only admin
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAuthority('ADMIN')")
 	@PatchMapping("/change-role")
 	public ResponseEntity<?> changeRole(@RequestBody ChangeRoleRequets requets) {
 		return ResponseEntity.ok(accountService.changeRole(requets.getId(), requets.getRole()));
