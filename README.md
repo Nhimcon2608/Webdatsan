@@ -184,7 +184,7 @@ echo 'export PATH=$JAVA_HOME/bin:$PATH' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-### 7.2 XAMPP MySQL khong Start duoc
+### 7.2 Trong XAMPP MySQL khong Start duoc
 
 Thuong do port `3306` da bi MySQL khac chiem (vi du Homebrew MySQL).
 
