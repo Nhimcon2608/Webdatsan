@@ -184,16 +184,6 @@ echo 'export PATH=$JAVA_HOME/bin:$PATH' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-### 7.2 XAMPP MySQL khong Start duoc
-
-Thuong do port `3306` da bi MySQL khac chiem (vi du Homebrew MySQL).
-
-Kiem tra:
-
-```bash
-lsof -nP -iTCP:3306 -sTCP:LISTEN
-```
-
 Neu thay process tu Homebrew (`/opt/homebrew/opt/mysql/bin/mysqld`), co 2 cach:
 
 1. Dung luon MySQL Homebrew, khong can bat MySQL trong XAMPP.
