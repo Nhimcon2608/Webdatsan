@@ -317,9 +317,10 @@ INSERT INTO `badminton_court` (`id`, `ordinal_number`, `is_available`, `branch_i
 ('ct_05', 3, 1, 'br_02');
 
 INSERT INTO `price` (`id`, `start_time`, `end_time`, `day_of_week`, `price_per_hour`, `branch_id`, `price_type_id`) VALUES 
-('pr_01', 5, 22, '0', 90000.00, 'br_01', 'pricetype_fixed'),
-('pr_02', 5, 22, '1', 120000.00, 'br_01', 'pricetype_fixed'),
-('pr_03', 5, 22, '0', 100000.00, 'br_02', 'pricetype_casual');
+
+('pr_01', 5, 16, '0', 85000.00, 'br_01', 'pricetype_casual'),
+('pr_02', 5, 16, '1', 120000.00, 'br_01', 'pricetype_casual'),
+('pr_03', 5, 16, '0', 95000.00, 'br_02', 'pricetype_casual');
 
 INSERT INTO `reservation` (`id`, `create_at`, `book_at`, `total_price`, `deposit`, `status`, `player_id`, `branch_id`) VALUES
 ('res_01', '2026-03-24 10:00:00', '2026-03-25 17:00:00', 180000.00, 50000.00, 'CONFIRMED', 'pl_01', 'br_01'),
@@ -335,4 +336,197 @@ INSERT INTO `temporary_recruitment` (`id`, `create_at`, `quantity`, `is_availabl
 
 INSERT INTO `temporary_registration` (`temporary_recruitment_id`, `player_id`) VALUES
 ('rec_01', 'pl_02'),
-('rec_02', 'pl_04');
+
+
+('rec_02', 'pl_04'); 
+-- Extended showcase seed for branch detail pages
+UPDATE `account` SET `image_path` = 'uploads/images/seed/branch-quangthien.jpg' WHERE `id` = 'acc_owner_01';
+UPDATE `account` SET `image_path` = 'uploads/images/seed/branch-nhuquynh.jpg' WHERE `id` = 'acc_owner_02';
+UPDATE `account` SET `image_path` = 'uploads/images/seed/avatar-player-01.jpg' WHERE `id` = 'acc_player_01';
+UPDATE `account` SET `image_path` = 'uploads/images/seed/avatar-player-02.jpg' WHERE `id` = 'acc_player_02';
+UPDATE `account` SET `image_path` = 'uploads/images/seed/avatar-player-03.jpg' WHERE `id` = 'acc_player_03';
+UPDATE `account` SET `image_path` = 'uploads/images/seed/avatar-player-04.jpg' WHERE `id` = 'acc_player_04';
+
+INSERT INTO `badminton_court` (`id`, `ordinal_number`, `is_available`, `branch_id`) VALUES
+('ct_06', 3, 1, 'br_01'),
+('ct_07', 4, 1, 'br_01'),
+('ct_08', 4, 1, 'br_02'),
+('ct_09', 5, 1, 'br_02')
+ON DUPLICATE KEY UPDATE
+  `ordinal_number` = VALUES(`ordinal_number`),
+  `is_available` = VALUES(`is_available`),
+  `branch_id` = VALUES(`branch_id`);
+
+INSERT INTO `badminton_court_image` (`id`, `image_path`, `short_description`, `badminton_court_id`) VALUES
+('img_ct_01_a', 'uploads/images/seed/court-01.jpg', 'Court 1 main view', 'ct_01'),
+('img_ct_02_a', 'uploads/images/seed/court-02.jpg', 'Court 2 main view', 'ct_02'),
+('img_ct_03_a', 'uploads/images/seed/court-03.jpg', 'Court 1 branch 2 main view', 'ct_03'),
+('img_ct_04_a', 'uploads/images/seed/court-04.jpg', 'Court 2 branch 2 main view', 'ct_04'),
+('img_ct_05_a', 'uploads/images/seed/court-05.jpg', 'Court 3 branch 2 main view', 'ct_05'),
+('img_ct_06_a', 'uploads/images/seed/court-06.jpg', 'Court 3 branch 1 main view', 'ct_06'),
+('img_ct_07_a', 'uploads/images/seed/court-07.jpg', 'Court 4 branch 1 main view', 'ct_07'),
+('img_ct_08_a', 'uploads/images/seed/court-08.jpg', 'Court 4 branch 2 main view', 'ct_08'),
+('img_ct_09_a', 'uploads/images/seed/court-09.jpg', 'Court 5 branch 2 main view', 'ct_09')
+ON DUPLICATE KEY UPDATE
+  `image_path` = VALUES(`image_path`),
+  `short_description` = VALUES(`short_description`),
+  `badminton_court_id` = VALUES(`badminton_court_id`);
+
+INSERT INTO `price` (`id`, `start_time`, `end_time`, `day_of_week`, `price_per_hour`, `branch_id`, `price_type_id`) VALUES
+('pr_04', 5, 16, '1', 130000.00, 'br_02', 'pricetype_casual'),
+('pr_05', 5, 9, '0', 80000.00, 'br_01', 'pricetype_fixed'),
+('pr_06', 17, 22, '0', 110000.00, 'br_01', 'pricetype_fixed'),
+('pr_07', 5, 9, '0', 90000.00, 'br_02', 'pricetype_fixed'),
+('pr_08', 17, 22, '0', 120000.00, 'br_02', 'pricetype_fixed'),
+('pr_19', 16, 22, '0', 115000.00, 'br_01', 'pricetype_casual'),
+('pr_20', 16, 22, '1', 140000.00, 'br_01', 'pricetype_casual'),
+('pr_21', 16, 22, '0', 125000.00, 'br_02', 'pricetype_casual'),
+('pr_22', 16, 22, '1', 145000.00, 'br_02', 'pricetype_casual')
+ON DUPLICATE KEY UPDATE
+  `start_time` = VALUES(`start_time`),
+  `end_time` = VALUES(`end_time`),
+  `day_of_week` = VALUES(`day_of_week`),
+  `price_per_hour` = VALUES(`price_per_hour`),
+  `branch_id` = VALUES(`branch_id`),
+  `price_type_id` = VALUES(`price_type_id`);
+
+INSERT INTO `voucher` (`id`, `create_at`, `discount_rate`, `event`, `is_available`, `branch_id`) VALUES
+('vou_seed_01', '2026-04-01 09:00:00', 10.0, 'Morning Saver - weekday bookings before 9 AM', 1, 'br_01'),
+('vou_seed_02', '2026-04-02 10:30:00', 15.0, 'Team Up - booking 2 hours or more', 1, 'br_01'),
+('vou_seed_03', '2026-04-01 11:00:00', 12.0, 'Student Match - valid from Monday to Thursday', 1, 'br_02'),
+('vou_seed_04', '2026-04-03 15:00:00', 18.0, 'Weekend Rally - limited promo for weekend slots', 1, 'br_02')
+ON DUPLICATE KEY UPDATE
+  `create_at` = VALUES(`create_at`),
+  `discount_rate` = VALUES(`discount_rate`),
+  `event` = VALUES(`event`),
+  `is_available` = VALUES(`is_available`),
+  `branch_id` = VALUES(`branch_id`);
+
+INSERT INTO `review` (`id`, `create_at`, `rating_level`, `content`, `player_id`, `branch_id`) VALUES
+('rev_seed_01', '2026-04-01 19:30:00', 5, 'San thoang, den sang va nhan vien ho tro nhanh.', 'pl_01', 'br_01'),
+('rev_seed_02', '2026-04-02 20:00:00', 4, 'Gia hop ly, dat san buoi toi kha de dang.', 'pl_02', 'br_01'),
+('rev_seed_03', '2026-04-03 18:45:00', 5, 'Mat san em, danh rat on va khu gui xe tien.', 'pl_03', 'br_01'),
+('rev_seed_04', '2026-04-01 21:00:00', 5, 'Khu san sach se, co nhieu khung gio cuoi tuan.', 'pl_02', 'br_02'),
+('rev_seed_05', '2026-04-02 17:40:00', 4, 'Phu hop danh giao luu, co voucher kha tot.', 'pl_04', 'br_02'),
+('rev_seed_06', '2026-04-04 08:15:00', 5, 'Dat san nhanh, thong tin tren trang chi tiet day du hon.', 'pl_01', 'br_02')
+ON DUPLICATE KEY UPDATE
+  `create_at` = VALUES(`create_at`),
+  `rating_level` = VALUES(`rating_level`),
+  `content` = VALUES(`content`),
+  `player_id` = VALUES(`player_id`),
+  `branch_id` = VALUES(`branch_id`);
+
+-- Additional branches for richer branch list and branch detail demo
+INSERT INTO `account` (`id`, `user_name`, `password`, `role`, `phone_number`, `is_activated`) VALUES
+('acc_owner_03', 'trongphuoc_owner', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'MANAGER', '0903456789', 1),
+('acc_owner_04', 'minhtam_owner', '$2a$12$godzW3ywiZkjYETVOIUiH.dFi3ycg8tdtxYDKInaPh0FUtRXFxf7u', 'MANAGER', '0904567891', 1)
+ON DUPLICATE KEY UPDATE
+  `user_name` = VALUES(`user_name`),
+  `password` = VALUES(`password`),
+  `role` = VALUES(`role`),
+  `phone_number` = VALUES(`phone_number`),
+  `is_activated` = VALUES(`is_activated`);
+
+INSERT INTO `owner` (`id`, `owner_name`, `phone_number`, `email`) VALUES
+('own_03', 'Nguyễn Trọng Phước', '0903456789', 'trongphuoc.owner@badminton.vn'),
+('own_04', 'Trần Biện Minh Tâm', '0904567891', 'minhtam.owner@badminton.vn')
+ON DUPLICATE KEY UPDATE
+  `owner_name` = VALUES(`owner_name`),
+  `phone_number` = VALUES(`phone_number`),
+  `email` = VALUES(`email`);
+
+INSERT INTO `partnership_request` (`id`, `create_at`, `branch_name`, `address`, `phone_number`, `status`, `owner_id`) VALUES
+('req_03', '2026-03-22 08:30:00', 'Trọng Phước Badminton', '268 Lý Thường Kiệt, Phường 14, Quận 10, TP.HCM', '02838647256', 'APPROVED', 'own_03'),
+('req_04', '2026-03-22 09:00:00', 'Minh Tâm Badminton', '227 Nguyễn Văn Cừ, Phường 4, Quận 5, TP.HCM', '02838309928', 'APPROVED', 'own_04')
+ON DUPLICATE KEY UPDATE
+  `create_at` = VALUES(`create_at`),
+  `branch_name` = VALUES(`branch_name`),
+  `address` = VALUES(`address`),
+  `phone_number` = VALUES(`phone_number`),
+  `status` = VALUES(`status`),
+  `owner_id` = VALUES(`owner_id`);
+
+INSERT INTO `branch` (`id`, `branch_name`, `email`, `address`, `bank_name`, `bank_number`, `description`, `account_id`, `partnership_request_id`) VALUES
+('br_03', 'Trọng Phước Badminton', 'contact@trongphuoc.vn', '268 Lý Thường Kiệt, Phường 14, Quận 10, TP.HCM', 'Techcombank', '1903988888', 'Không gian hiện đại, gần trung tâm, phù hợp đánh giao lưu và đặt lịch cố định.', 'acc_owner_03', 'req_03'),
+('br_04', 'Minh Tâm Badminton', 'contact@minhtam.vn', '227 Nguyễn Văn Cừ, Phường 4, Quận 5, TP.HCM', 'ACB', '140299999', 'Sân thoáng, đèn sáng tốt, phù hợp cho cả người mới chơi và nhóm đánh cuối tuần.', 'acc_owner_04', 'req_04')
+ON DUPLICATE KEY UPDATE
+  `branch_name` = VALUES(`branch_name`),
+  `email` = VALUES(`email`),
+  `address` = VALUES(`address`),
+  `bank_name` = VALUES(`bank_name`),
+  `bank_number` = VALUES(`bank_number`),
+  `description` = VALUES(`description`),
+  `account_id` = VALUES(`account_id`),
+  `partnership_request_id` = VALUES(`partnership_request_id`);
+
+UPDATE `branch` SET `is_cooperated` = 0 WHERE `id` = 'br_04';
+
+UPDATE `account` SET `image_path` = 'uploads/images/seed/branch-trongphuoc.jpg' WHERE `id` = 'acc_owner_03';
+UPDATE `account` SET `image_path` = 'uploads/images/seed/branch-minhtam.jpg' WHERE `id` = 'acc_owner_04';
+
+INSERT INTO `badminton_court` (`id`, `ordinal_number`, `is_available`, `branch_id`) VALUES
+('ct_10', 1, 1, 'br_03'),
+('ct_11', 2, 1, 'br_03'),
+('ct_12', 3, 1, 'br_03'),
+('ct_13', 1, 1, 'br_04'),
+('ct_14', 2, 1, 'br_04'),
+('ct_15', 3, 1, 'br_04'),
+('ct_16', 4, 1, 'br_04')
+ON DUPLICATE KEY UPDATE
+  `ordinal_number` = VALUES(`ordinal_number`),
+  `is_available` = VALUES(`is_available`),
+  `branch_id` = VALUES(`branch_id`);
+
+INSERT INTO `badminton_court_image` (`id`, `image_path`, `short_description`, `badminton_court_id`) VALUES
+('img_ct_10_a', 'uploads/images/seed/court-10.jpg', 'Court 1 branch 3 main view', 'ct_10'),
+('img_ct_11_a', 'uploads/images/seed/court-11.jpg', 'Court 2 branch 3 main view', 'ct_11'),
+('img_ct_12_a', 'uploads/images/seed/court-12.jpg', 'Court 3 branch 3 main view', 'ct_12'),
+('img_ct_13_a', 'uploads/images/seed/court-13.jpg', 'Court 1 branch 4 main view', 'ct_13'),
+('img_ct_14_a', 'uploads/images/seed/court-14.jpg', 'Court 2 branch 4 main view', 'ct_14'),
+('img_ct_15_a', 'uploads/images/seed/court-15.jpg', 'Court 3 branch 4 main view', 'ct_15'),
+('img_ct_16_a', 'uploads/images/seed/court-16.jpg', 'Court 4 branch 4 main view', 'ct_16')
+ON DUPLICATE KEY UPDATE
+  `image_path` = VALUES(`image_path`),
+  `short_description` = VALUES(`short_description`),
+  `badminton_court_id` = VALUES(`badminton_court_id`);
+
+INSERT INTO `price` (`id`, `start_time`, `end_time`, `day_of_week`, `price_per_hour`, `branch_id`, `price_type_id`) VALUES
+('pr_09', 5, 16, '0', 95000.00, 'br_03', 'pricetype_casual'),
+('pr_10', 16, 22, '0', 125000.00, 'br_03', 'pricetype_casual'),
+('pr_11', 5, 22, '1', 135000.00, 'br_03', 'pricetype_casual'),
+('pr_12', 6, 10, '0', 85000.00, 'br_03', 'pricetype_fixed'),
+('pr_13', 17, 22, '0', 115000.00, 'br_03', 'pricetype_fixed'),
+('pr_14', 5, 16, '0', 90000.00, 'br_04', 'pricetype_casual'),
+('pr_15', 16, 22, '0', 120000.00, 'br_04', 'pricetype_casual'),
+('pr_16', 5, 22, '1', 130000.00, 'br_04', 'pricetype_casual'),
+('pr_17', 6, 10, '0', 80000.00, 'br_04', 'pricetype_fixed'),
+('pr_18', 17, 22, '0', 110000.00, 'br_04', 'pricetype_fixed')
+ON DUPLICATE KEY UPDATE
+  `start_time` = VALUES(`start_time`),
+  `end_time` = VALUES(`end_time`),
+  `day_of_week` = VALUES(`day_of_week`),
+  `price_per_hour` = VALUES(`price_per_hour`),
+  `branch_id` = VALUES(`branch_id`),
+  `price_type_id` = VALUES(`price_type_id`);
+
+INSERT INTO `voucher` (`id`, `create_at`, `discount_rate`, `event`, `is_available`, `branch_id`) VALUES
+('vou_seed_05', '2026-04-02 09:00:00', 10.0, 'Opening Week - Trọng Phước Badminton', 1, 'br_03'),
+('vou_seed_06', '2026-04-02 09:30:00', 12.0, 'Early Bird - Minh Tâm Badminton', 1, 'br_04')
+ON DUPLICATE KEY UPDATE
+  `create_at` = VALUES(`create_at`),
+  `discount_rate` = VALUES(`discount_rate`),
+  `event` = VALUES(`event`),
+  `is_available` = VALUES(`is_available`),
+  `branch_id` = VALUES(`branch_id`);
+
+INSERT INTO `review` (`id`, `create_at`, `rating_level`, `content`, `player_id`, `branch_id`) VALUES
+('rev_seed_07', '2026-04-04 18:00:00', 5, 'Vi tri trung tam, bang gia vang lai ro rang va de chon gio.', 'pl_02', 'br_03'),
+('rev_seed_08', '2026-04-04 20:30:00', 4, 'San moi, den sang va co nhieu khung gia hop ly buoi sang.', 'pl_04', 'br_03'),
+('rev_seed_09', '2026-04-05 19:10:00', 5, 'Dia chi de tim, danh cuoi tuan rat on, giao dien hien gia day du.', 'pl_03', 'br_04'),
+('rev_seed_10', '2026-04-05 21:00:00', 4, 'San thoang, co ca gia co dinh va vang lai nen dat lich tien.', 'pl_01', 'br_04')
+ON DUPLICATE KEY UPDATE
+  `create_at` = VALUES(`create_at`),
+  `rating_level` = VALUES(`rating_level`),
+  `content` = VALUES(`content`),
+  `player_id` = VALUES(`player_id`),
+  `branch_id` = VALUES(`branch_id`);

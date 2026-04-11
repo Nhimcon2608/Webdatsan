@@ -290,7 +290,7 @@ const Footer = () => {
 					}}
 				>
 					<Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: { xs: 2, md: 0 } }}>
-						© {new Date().getFullYear()} BcB by Vo Thai Duong & Nguyen Duc Tuan
+						© {new Date().getFullYear()} BcB by QTQT
 					</Typography>
 
 					<Box sx={{ display: 'flex', gap: { xs: 2, md: 4 } }}>
