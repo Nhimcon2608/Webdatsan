@@ -18,7 +18,9 @@ public class PriceTypeService {
 	private final PriceTypeRepository priceTypeRepository;
 	private final PriceTypeMapper priceTypeMapper;
 
-	private static final List<String> VALID_TYPES = List.of("Vãng lai", "Cố định");
+	private static final String CASUAL_TYPE = "Vãng lai";
+	private static final String FIXED_TYPE = "Cố định";
+	private static final List<String> VALID_TYPES = List.of(CASUAL_TYPE, FIXED_TYPE);
 
 	public PriceTypeResponse create(PriceTypeRequest request) {
 		if (!VALID_TYPES.contains(request.getType())) {
@@ -37,6 +39,7 @@ public class PriceTypeService {
 	}
 
 	public List<PriceTypeResponse> getAll() {
+		ensureDefaultPriceTypes();
 		return priceTypeRepository.findAll().stream()
 				.map(priceTypeMapper::toResponse)
 				.collect(Collectors.toList());
@@ -50,5 +53,22 @@ public class PriceTypeService {
 
 	public void delete(String id) {
 		priceTypeRepository.deleteById(id);
+	}
+
+	private void ensureDefaultPriceTypes() {
+		ensurePriceType(CASUAL_TYPE);
+		ensurePriceType(FIXED_TYPE);
+	}
+
+	private void ensurePriceType(String type) {
+		if (priceTypeRepository.findByType(type).isPresent()) {
+			return;
+		}
+
+		PriceType priceType = PriceType.builder()
+				.id(GenerationId.generateId("type"))
+				.type(type)
+				.build();
+		priceTypeRepository.save(priceType);
 	}
 }

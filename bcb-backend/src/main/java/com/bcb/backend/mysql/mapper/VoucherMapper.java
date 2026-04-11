@@ -12,6 +12,8 @@ public class VoucherMapper {
                 .id(voucher.getId())
                 .createAt(voucher.getCreateAt())
                 .discountRate(voucher.getDiscountRate())
+                .startDate(voucher.getStartDate())
+                .endDate(voucher.getEndDate())
                 .event(voucher.getEvent())
                 .isAvailable(voucher.isAvailable())
                 .branchName(voucher.getBranch() != null ? voucher.getBranch().getBranchName() : null)
@@ -22,6 +24,8 @@ public class VoucherMapper {
 
         return Voucher.builder()
                 .discountRate(dto.getDiscountRate())
+                .startDate(dto.getStartDate())
+                .endDate(dto.getEndDate())
                 .event(dto.getEvent())
                 .isAvailable(dto.isAvailable())
                 .build();

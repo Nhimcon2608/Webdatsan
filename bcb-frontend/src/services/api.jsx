@@ -91,7 +91,9 @@ apiClient.interceptors.response.use(
 					break;
 
 				case 404:
-					showSnackbar('Không tìm thấy dữ liệu', 'warning');
+					if (!error.config?.skipNotFoundSnackbar) {
+						showSnackbar('Không tìm thấy dữ liệu', 'warning');
+					}
 					break;
 
 				default:

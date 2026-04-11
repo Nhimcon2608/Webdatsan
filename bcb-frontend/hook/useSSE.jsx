@@ -6,8 +6,11 @@ export default function useSSE(userId) {
     useEffect(() => {
         if (!userId) return;
 
+        const token = localStorage.getItem("authToken");
+        if (!token) return;
+
         const source = new EventSource(
-            `${import.meta.env.VITE_API_URL}/sse/subscribe/${userId}`
+            `${import.meta.env.VITE_API_URL}/sse/subscribe/${encodeURIComponent(userId)}?token=${encodeURIComponent(token)}`
         );
         sourceRef.current = source;
 

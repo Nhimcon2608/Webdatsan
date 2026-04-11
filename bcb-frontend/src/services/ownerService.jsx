@@ -4,9 +4,13 @@ const ownerService = {
 
     getOwnerByPhoneNumber: async (phoneNumber) => {
         try {
-            return await apiClient.get(`owners/phone/${phoneNumber}`);
+            return await apiClient.get(`/owners/phone/${encodeURIComponent(phoneNumber)}`, {
+                skipNotFoundSnackbar: true,
+            });
         } catch (error) {
-            console.error('Error fetching owner by phone number:', error);
+            if (error.response?.status !== 404) {
+                console.error('Error fetching owner by phone number:', error);
+            }
             throw error;
         }
     },

@@ -140,6 +140,8 @@ CREATE TABLE `badminton_court_image` (
 CREATE TABLE `voucher` (
   `id` varchar(255) NOT NULL,
   `create_at` datetime(6) DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
   `discount_rate` double DEFAULT NULL,
   `event` varchar(255) DEFAULT NULL,
   `is_available` tinyint(1) NOT NULL DEFAULT 1,
@@ -315,6 +317,7 @@ INSERT INTO `badminton_court` (`id`, `ordinal_number`, `is_available`, `branch_i
 ('ct_05', 3, 1, 'br_02');
 
 INSERT INTO `price` (`id`, `start_time`, `end_time`, `day_of_week`, `price_per_hour`, `branch_id`, `price_type_id`) VALUES 
+
 ('pr_01', 5, 16, '0', 85000.00, 'br_01', 'pricetype_casual'),
 ('pr_02', 5, 16, '1', 120000.00, 'br_01', 'pricetype_casual'),
 ('pr_03', 5, 16, '0', 95000.00, 'br_02', 'pricetype_casual');
@@ -333,6 +336,8 @@ INSERT INTO `temporary_recruitment` (`id`, `create_at`, `quantity`, `is_availabl
 
 INSERT INTO `temporary_registration` (`temporary_recruitment_id`, `player_id`) VALUES
 ('rec_01', 'pl_02'),
+
+
 ('rec_02', 'pl_04'); 
 -- Extended showcase seed for branch detail pages
 UPDATE `account` SET `image_path` = 'uploads/images/seed/branch-quangthien.jpg' WHERE `id` = 'acc_owner_01';

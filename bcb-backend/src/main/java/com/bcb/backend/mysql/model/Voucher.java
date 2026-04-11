@@ -1,5 +1,6 @@
 package com.bcb.backend.mysql.model;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -36,6 +37,12 @@ public class Voucher {
 
     @Column(name = "discount_rate")
     private double discountRate;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
 
     @Column(name = "event")
     private String event;

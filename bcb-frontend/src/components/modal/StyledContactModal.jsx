@@ -30,7 +30,7 @@ import SendIcon from '@mui/icons-material/Send';
 
 import StyledMenuItem from '../../components/common/StyledMenuItem';
 import getProvince from '../../services/getProvince';
-import ownerService from '../../services/partnershipRequestService';
+import partnershipRequestService from '../../services/partnershipRequestService';
 import ErrorModal from './ErrorModal';
 
 const containerVariants = {
@@ -185,10 +185,10 @@ function StyledContactModal({ open, handleClose, theme, ownerData }) {
 		};
 
 		try {
-			await ownerService.postPartnershipRequest(formData);
+			await partnershipRequestService.postPartnershipRequest(formData);
 			// console.log('Form data submitted:', formData);
 			navigate('/contact/request-sents-successfully');
-		} catch (error) {
+		} catch {
 			handleOpenErrorModal();
 		} finally {
 			setIsSubmitting(false);
@@ -322,7 +322,7 @@ function StyledContactModal({ open, handleClose, theme, ownerData }) {
 																variant="outlined"
 																type='text'
 																required
-																disabled={ownerData.ownerName}
+																disabled={Boolean(ownerInput.id)}
 																InputProps={{
 																	startAdornment: (
 																		<InputAdornment position="start">
@@ -345,7 +345,7 @@ function StyledContactModal({ open, handleClose, theme, ownerData }) {
 																fullWidth
 																label="Số điện thoại"
 																name="phoneNumber"
-																value={ownerData.phoneNumber}
+																value={ownerInput.phoneNumber}
 																margin="normal"
 																variant="outlined"
 																type="tel"
@@ -376,7 +376,7 @@ function StyledContactModal({ open, handleClose, theme, ownerData }) {
 																variant="outlined"
 																type="email"
 																required
-																disabled={ownerData.email}
+																disabled={Boolean(ownerInput.id)}
 																InputProps={{
 																	startAdornment: (
 																		<InputAdornment position="start">

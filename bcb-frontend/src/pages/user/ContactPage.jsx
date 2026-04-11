@@ -36,26 +36,44 @@ const ContactPage = () => {
 	};
 
 	const handleSearch = async () => {
-		if (!ownerData.phoneNumber || ownerData.phoneNumber.trim() === '') {
+		const phoneNumber = ownerData.phoneNumber.trim();
+
+		if (!phoneNumber) {
 			setError('Vui lòng nhập số điện thoại');
+			return;
+		}
+
+		if (!/^[0-9]{10}$/.test(phoneNumber)) {
+			setError('Số điện thoại không hợp lệ (cần 10 chữ số)');
 			return;
 		}
 
 		setIsLoading(true);
 		try {
-			const ownerResponse = await ownerService.getOwnerByPhoneNumber(ownerData.phoneNumber);
+			const ownerResponse = await ownerService.getOwnerByPhoneNumber(phoneNumber);
 			if (ownerResponse.data) {
 				setOwnerData({
 					id: ownerResponse.data.id,
-					phoneNumber: ownerResponse.data.phoneNumber,
+					phoneNumber: ownerResponse.data.phoneNumber || phoneNumber,
 					ownerName: ownerResponse.data.ownerName,
 					email: ownerResponse.data.email
 				});
-				handleOpenModal();
-
 			}
-		} finally {
 			handleOpenModal();
+		} catch (error) {
+			if (error.response?.status === 404) {
+				setOwnerData({
+					id: '',
+					phoneNumber,
+					ownerName: '',
+					email: ''
+				});
+				handleOpenModal();
+				return;
+			}
+
+			setError('Không thể kiểm tra số điện thoại. Vui lòng thử lại.');
+		} finally {
 			setIsLoading(false);
 		}
 	};

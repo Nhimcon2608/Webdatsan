@@ -319,6 +319,11 @@ const DashboardContent = () => {
 		fetchData();
 	};
 
+	const findPriceTypeBySelection = (types, selectedType) => {
+		const expectedType = selectedType === "fixedPrices" ? "Cố định" : "Vãng lai";
+		return types.find((priceType) => priceType.type?.trim() === expectedType);
+	};
+
 	const handleAddNewPrice = async (e, priceData, selectedType) => {
 		e.preventDefault();
 
@@ -342,11 +347,18 @@ const DashboardContent = () => {
 			return;
 		}
 
-		const selectedPriceType = priceTypes.find(
-			(pt) =>
-				(selectedType === "fixedPrices" && pt.type === "Cố định") ||
-				(selectedType === "casualPrices" && pt.type === "Vãng lai")
-		);
+		let selectedPriceType = findPriceTypeBySelection(priceTypes, selectedType);
+
+		if (!selectedPriceType) {
+			try {
+				const latestPriceTypes = await priceTypeService.getAll();
+				setPriceTypes(latestPriceTypes);
+				selectedPriceType = findPriceTypeBySelection(latestPriceTypes, selectedType);
+			} catch (err) {
+				setError("Không thể tải loại giá.");
+				return;
+			}
+		}
 
 		if (!selectedPriceType) {
 			setError("Không tìm thấy loại giá.");

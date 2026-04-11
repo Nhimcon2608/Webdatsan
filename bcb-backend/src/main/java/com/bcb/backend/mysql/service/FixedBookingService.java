@@ -1,6 +1,7 @@
 package com.bcb.backend.mysql.service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +53,11 @@ public class FixedBookingService {
 
 		Voucher voucher = null;
 		if (req.getVoucherId() != null && !req.getVoucherId().isBlank()) {
-			voucher = voucherRepository.findById(req.getVoucherId()).orElse(null);
+			voucher = voucherRepository.findById(req.getVoucherId())
+					.orElseThrow(() -> new IllegalArgumentException("Voucher not found"));
+			if (!isVoucherActive(voucher)) {
+				throw new IllegalArgumentException("Voucher không còn hiệu lực");
+			}
 		}
 
 		Branch branch = branchRepository.findById(req.getBranchId())
@@ -147,5 +152,14 @@ public class FixedBookingService {
 		return reservations.stream()
 				.map(ReservationMapper::toDTO)
 				.collect(Collectors.toList());
+	}
+
+	private boolean isVoucherActive(Voucher voucher) {
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+		return voucher.isAvailable()
+				&& voucher.getStartDate() != null
+				&& voucher.getEndDate() != null
+				&& !today.isBefore(voucher.getStartDate())
+				&& !today.isAfter(voucher.getEndDate());
 	}
 }
