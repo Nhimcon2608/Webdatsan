@@ -1,12 +1,14 @@
 import apiClient from "./api";
 
 const voucherService = {
-    getAllVouchersOfBranch: async (branchId) => {
+    getAllVouchersOfBranch: async (branchId, token) => {
         try {
-            const response = await apiClient.get(`/vouchers/branch/${branchId}`);
+            const response = await apiClient.get(`/vouchers/branch/${branchId}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
             return response.data;
         } catch (error) {
-            console.error("Error fetching branch reviews:", error);
+            console.error("Error fetching vouchers:", error);
             throw error;
         }
     },
