@@ -13,7 +13,6 @@ import {
 	Stack,
 	IconButton,
 	Tooltip,
-	Badge,
 } from "@mui/material";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
@@ -46,6 +45,10 @@ const Sidebar = ({ user, theme, toggleTheme, isCollapsed: parentCollapsed, onTog
 	const location = useLocation();
 	const navigate = useNavigate();
 	const { logout } = useAuth();
+	const displayName = user?.username || user?.name || "Manager";
+	const displayRole = user?.role || "MANAGER";
+	const avatarSrc = user?.imagePath ? `${import.meta.env.VITE_API_URL}/${user.imagePath}` : "";
+	const avatarInitial = displayName.charAt(0).toUpperCase();
 
 	const isCollapsed = parentCollapsed;
 	const toggleCollapse = onToggleCollapse;
@@ -95,6 +98,8 @@ const Sidebar = ({ user, theme, toggleTheme, isCollapsed: parentCollapsed, onTog
 				<Box sx={{ px: 2, py: 1 }}>
 					<Stack direction="row" spacing={2} alignItems="center">
 						<Avatar
+							alt={displayName}
+							src={avatarSrc}
 							sx={{
 								bgcolor: "primary.main",
 								color: "primary.contrastText",
@@ -102,14 +107,14 @@ const Sidebar = ({ user, theme, toggleTheme, isCollapsed: parentCollapsed, onTog
 								"&:hover": { transform: "scale(1.1)" },
 							}}
 						>
-							{user?.name?.[0] || "M"}
+							{!avatarSrc && avatarInitial}
 						</Avatar>
 						<Box>
 							<Typography variant="subtitle1" fontWeight="600" color="text.primary">
-								{user?.name || "Manager"}
+								{displayName}
 							</Typography>
 							<Typography variant="body2" color="text.secondary" sx={{ fontStyle: "italic" }}>
-								{user?.role || "Administrator"}
+								{displayRole}
 							</Typography>
 						</Box>
 					</Stack>
@@ -120,7 +125,7 @@ const Sidebar = ({ user, theme, toggleTheme, isCollapsed: parentCollapsed, onTog
 
 			{/* MENU ITEMS */}
 			<List sx={{ flexGrow: 1 }}>
-				{memoizedMenuItems.map(({ text, icon, path, badge }) => {
+				{memoizedMenuItems.map(({ text, icon, path }) => {
 					const selected = location.pathname === path;
 					return (
 						<Tooltip key={path} title={isCollapsed ? text : ""} placement="right">

@@ -1,7 +1,9 @@
 package com.bcb.backend.mysql.service;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.regex.Pattern;
 
@@ -28,6 +30,7 @@ public class AccountService {
     private static final String USERNAME_ALREADY_EXISTS = "Username already exists";
     private static final String PHONE_NUMBER_LIMIT_EXCEEDED = "This phone number has exceeded the number of registrations.";
     private static final String OLD_PASSWORD_INCORRECT = "Old password is incorrect";
+    private static final Path IMAGE_UPLOAD_ROOT = Paths.get("uploads", "images");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     private final AccountRepository accountRepo;
@@ -228,31 +231,58 @@ public class AccountService {
     }
 
     public AccountResponse uploadImage(String id, MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Image file is required.");
+        }
 
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
             throw new IllegalArgumentException("Only image files are allowed.");
         }
 
-        Account branch = accountRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Branch not found"));
+        Account account = accountRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND_ID + id));
 
-        String originalFilename = file.getOriginalFilename();
-        String extension = (originalFilename != null && originalFilename.contains("."))
-                ? originalFilename.substring(originalFilename.lastIndexOf("."))
-                : "";
+        String extension = resolveImageExtension(file.getOriginalFilename(), contentType);
+        String fileName = "avatar-" + UUID.randomUUID() + extension;
 
-        String uploadDir = "uploads/images/" + id + "/";
-        String fileName = branch.getId() + extension;
-
-        Path filePath = Paths.get(uploadDir + fileName);
-        Files.createDirectories(filePath.getParent());
+        Path uploadDir = IMAGE_UPLOAD_ROOT.resolve(id);
+        Path filePath = uploadDir.resolve(fileName);
+        Files.createDirectories(uploadDir);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        branch.setImagePath(uploadDir + fileName);
-        Account savedAccount = accountRepo.save(branch);
+        account.setImagePath(toPublicPath(filePath));
+        Account savedAccount = accountRepo.save(account);
 
         return AccountMapper.toDTO(savedAccount);
+    }
 
+    private String resolveImageExtension(String originalFilename, String contentType) {
+        String extensionFromContentType = switch (contentType.toLowerCase(Locale.ROOT)) {
+            case "image/jpeg", "image/jpg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/gif" -> ".gif";
+            case "image/webp" -> ".webp";
+            default -> "";
+        };
+        if (!extensionFromContentType.isEmpty()) {
+            return extensionFromContentType;
+        }
+
+        if (originalFilename != null) {
+            int extensionStart = originalFilename.lastIndexOf(".");
+            if (extensionStart >= 0 && extensionStart < originalFilename.length() - 1) {
+                String extension = originalFilename.substring(extensionStart).toLowerCase(Locale.ROOT);
+                if (extension.matches("\\.[a-z0-9]{1,10}")) {
+                    return extension;
+                }
+            }
+        }
+
+        return "";
+    }
+
+    private String toPublicPath(Path path) {
+        return path.normalize().toString().replace("\\", "/");
     }
 }
