@@ -37,16 +37,27 @@ function shouldAttachAuthToken(url) {
 	return !["/auth/login", "/auth/register"].includes(url);
 }
 
+function removeContentTypeHeader(headers) {
+	if (!headers) {
+		return;
+	}
+
+	if (typeof headers.delete === "function") {
+		headers.delete("Content-Type");
+		headers.delete("content-type");
+		return;
+	}
+
+	delete headers["Content-Type"];
+	delete headers["content-type"];
+}
+
 apiClient.interceptors.request.use(
 	(config) => {
 		startProgress();
 
 		if (config.data instanceof FormData) {
-			if (typeof config.headers?.setContentType === "function") {
-				config.headers.setContentType(undefined);
-			} else if (config.headers) {
-				delete config.headers["Content-Type"];
-			}
+			removeContentTypeHeader(config.headers);
 		}
 
 		const token = localStorage.getItem("authToken");

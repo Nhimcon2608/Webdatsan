@@ -58,7 +58,7 @@ const AccountProfile = () => {
 				const u = await authService.getCurrentAccount(token);
 				setUser(u);
 				setPhoneNumber(u.phoneNumber || "");
-			} catch (err) {
+			} catch {
 				setSnackbar({ open: true, message: "Không tải được thông tin", severity: "error" });
 			} finally {
 				setLoading(false);
@@ -90,7 +90,7 @@ const AccountProfile = () => {
 		formData.append("file", file);
 		try {
 			const res = await managerService.uploadAvatar(formData, token);
-			setUser(prev => ({ ...prev, imagePath: res.imagePath }));
+			setUser(prev => ({ ...prev, ...res }));
 			setSnackbar({ open: true, message: "Đổi avatar thành công!", severity: "success" });
 			setIsImageDialogOpen(false);
 		} catch {

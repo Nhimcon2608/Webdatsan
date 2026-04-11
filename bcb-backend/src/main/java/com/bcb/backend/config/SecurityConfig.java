@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/prices/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/price-types/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**", "/api/uploads/**").permitAll()
                         // Chỉ ADMIN mới được xem danh sách blacklisted tokens
                         .requestMatchers("/auth/blacklisted-tokens").hasRole("ADMIN")
                         // Tất cả các request còn lại phải xác thực

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
 	Box,
 	CssBaseline,
@@ -18,6 +18,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp"; // Icon q
 import Sidebar from "../manager/Sidebar";
 import Topbar from "../manager/Topbar";
 import { Outlet } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
 
 const drawerWidth = 240;
 const collapsedWidth = 80;
@@ -87,6 +88,8 @@ function ScrollTop({ children }) {
 }
 
 const ManagerLayout = () => {
+	const { user } = useAuth();
+
 	// === QUẢN LÝ THEME ===
 	const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
 	const [mode, setMode] = useState(() => {
@@ -107,12 +110,6 @@ const ManagerLayout = () => {
 	const toggleSidebar = useCallback(() => {
 		setIsSidebarCollapsed((prev) => !prev);
 	}, []);
-
-	// === DỮ LIỆU USER GIẢ ===
-	const user = {
-		name: "Chủ Sân",
-		role: "Administrator",
-	};
 
 	return (
 		<ThemeProvider theme={theme}>
@@ -141,6 +138,7 @@ const ManagerLayout = () => {
 				>
 					{/* Topbar */}
 					<Topbar
+						user={user}
 						toggleSidebar={toggleSidebar}
 						isSidebarCollapsed={isSidebarCollapsed}
 					>
