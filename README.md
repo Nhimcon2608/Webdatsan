@@ -138,8 +138,15 @@ npm run dev
 
 - Mo `http://localhost:5173`
 - Dang nhap:
-  - Username: `admin`
-  - Password: `Admin@123`
+- Admin
+  - Username: `trongphuoc`
+  - Password: `123456`
+- Manager:
+  - Username: `quangthien`
+  - Password: `123456`
+- User:
+  - Username: `nhuquynh`
+  - Password: `123456
 - Neu loi API:
   - Kiem tra backend da chay chua
   - Kiem tra `VITE_API_URL`
