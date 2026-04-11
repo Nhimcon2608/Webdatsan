@@ -8,4 +8,6 @@ import java.util.List;
 @Repository
 public interface BadmintonCourtRepository extends JpaRepository<BadmintonCourt, String> {
     List<BadmintonCourt> findByBranch_Id(String branchId);
+
+    boolean existsByBranch_IdAndOrdinalNumber(String branchId, short ordinalNumber);
 }

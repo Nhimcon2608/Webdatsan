@@ -57,9 +57,11 @@ import {
 	isAfter,
 	isBefore,
 	startOfMonth,
+	startOfDay,
 	getDay,
 	addMonths,
 	startOfWeek,
+	parseISO,
 } from "date-fns";
 import vi from "date-fns/locale/vi";
 
@@ -114,6 +116,18 @@ const bookingType = [
 const isWeekendDay = (date) => {
 	const day = date.getDay(); // 0 = CN, 6 = T7
 	return day === 0 || day === 6;
+};
+
+const isVoucherActive = (voucher) => {
+	if (!voucher?.available || !voucher.startDate || !voucher.endDate) {
+		return false;
+	}
+
+	const today = startOfDay(new Date());
+	const startDate = startOfDay(parseISO(voucher.startDate));
+	const endDate = startOfDay(parseISO(voucher.endDate));
+
+	return !isBefore(today, startDate) && !isAfter(today, endDate);
 };
 
 const BranchDetail = () => {
@@ -232,7 +246,7 @@ const BranchDetail = () => {
 					...branchInfor,
 					reviews: reviews,
 					courts: courts,
-					vouchers: vouchers,
+					vouchers: vouchers.filter(isVoucherActive),
 				};
 
 				setBranchDetail(updatedBranchInfor);
@@ -975,6 +989,67 @@ const BranchDetail = () => {
 		const total = calculateTotalPrice();
 		const discount = calculateTotalDiscount();
 		return Math.max(0, total - total * discount);
+	};
+
+	const renderVoucherSelector = (totalAmount) => {
+		const vouchers = branchDetail.vouchers?.filter(isVoucherActive) || [];
+
+		return (
+			<Box sx={{ mt: 2 }}>
+				<Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+					<Tag size={18} color={theme.palette.primary.main} />
+					<Typography variant="subtitle2" fontWeight={800}>
+						Mã giảm giá
+					</Typography>
+				</Box>
+
+				{vouchers.length === 0 ? (
+					<Typography variant="body2" color="text.secondary" sx={{ fontStyle: "italic" }}>
+						Hiện chưa có mã giảm giá phù hợp cho chi nhánh này.
+					</Typography>
+				) : (
+					<Box sx={{ display: "grid", gap: 1 }}>
+						{vouchers.map((voucher) => {
+							const selected = selectedVoucher?.id === voucher.id;
+							const discountAmount = totalAmount * voucher.discountRate / 100;
+
+							return (
+								<Paper
+									key={voucher.id}
+									variant="outlined"
+									onClick={() => setSelectedVoucher(selected ? null : voucher)}
+									sx={{
+										p: 1.5,
+										cursor: "pointer",
+										borderRadius: theme.shape.borderRadius,
+										borderColor: selected ? "primary.main" : "divider",
+										bgcolor: selected ? "primary.main" + "10" : "background.paper",
+										display: "flex",
+										justifyContent: "space-between",
+										alignItems: { xs: "flex-start", sm: "center" },
+										flexDirection: { xs: "column", sm: "row" },
+										gap: 1,
+									}}
+								>
+									<Box>
+										<Typography fontWeight={800}>{voucher.event}</Typography>
+										<Typography variant="body2" color="text.secondary">
+											Giảm {voucher.discountRate}% • Tiết kiệm {formatVND(discountAmount)}
+										</Typography>
+									</Box>
+									<Chip
+										label={selected ? "Đã áp dụng" : "Áp dụng"}
+										color={selected ? "primary" : "default"}
+										size="small"
+										sx={{ fontWeight: 700 }}
+									/>
+								</Paper>
+							);
+						})}
+					</Box>
+				)}
+			</Box>
+		);
 	};
 
 	const handleLoginSuccess = async (response) => {
@@ -1738,6 +1813,7 @@ const BranchDetail = () => {
 										: "-"}
 								</Typography>
 							</Box>
+							{renderVoucherSelector(calculateTotalPrice())}
 							<Box
 								sx={{
 									border: "1px solid",
@@ -2130,9 +2206,11 @@ const BranchDetail = () => {
 								<Typography fontWeight={800}>{formatVND(total4Weeks)}</Typography>
 							</Box>
 
+							{renderVoucherSelector(total4Weeks)}
+
 							{selectedVoucher && (
 								<>
-									<Box sx={{ display: "flex", justifyContent: "space-between", color: "success.main", fontWeight: 800, mb: 2 }}>
+									<Box sx={{ display: "flex", justifyContent: "space-between", color: "success.main", fontWeight: 800, mb: 2, mt: 2 }}>
 										<span>Giảm {selectedVoucher.discountRate}% ({selectedVoucher.event}):</span>
 										<span>-{formatVND(total4Weeks * selectedVoucher.discountRate / 100)}</span>
 									</Box>
@@ -3170,7 +3248,7 @@ const BranchDetail = () => {
 									<Grid container spacing={3}>
 										{branchDetail.vouchers?.map(
 											(voucher) =>
-												voucher.available && (
+												isVoucherActive(voucher) && (
 													<Grid
 														size={{ xs: 12, sm: 6, md: 3.5 }}
 														key={voucher.id}

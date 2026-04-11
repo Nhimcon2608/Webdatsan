@@ -140,6 +140,8 @@ CREATE TABLE `badminton_court_image` (
 CREATE TABLE `voucher` (
   `id` varchar(255) NOT NULL,
   `create_at` datetime(6) DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
   `discount_rate` double DEFAULT NULL,
   `event` varchar(255) DEFAULT NULL,
   `is_available` tinyint(1) NOT NULL DEFAULT 1,
@@ -251,8 +253,8 @@ CREATE TABLE `temporary_recruitment_saved` (
 -- Optional basic seed
 INSERT INTO `price_type` (`id`, `type`)
 VALUES
-  ('pricetype_weekday', 'EOW'),
-  ('pricetype_weekend', 'BOW')
+  ('pricetype_fixed', 'Cố định'),
+  ('pricetype_casual', 'Vãng lai')
 ON DUPLICATE KEY UPDATE `type` = VALUES(`type`);
 
 -- Admin account: username=admin, password=Admin@123
@@ -315,9 +317,9 @@ INSERT INTO `badminton_court` (`id`, `ordinal_number`, `is_available`, `branch_i
 ('ct_05', 3, 1, 'br_02');
 
 INSERT INTO `price` (`id`, `start_time`, `end_time`, `day_of_week`, `price_per_hour`, `branch_id`, `price_type_id`) VALUES 
-('pr_01', 5, 22, 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY', 90000.00, 'br_01', 'pricetype_weekday'),
-('pr_02', 5, 22, 'SATURDAY,SUNDAY', 120000.00, 'br_01', 'pricetype_weekend'),
-('pr_03', 5, 22, 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY', 100000.00, 'br_02', 'pricetype_weekday');
+('pr_01', 5, 22, '0', 90000.00, 'br_01', 'pricetype_fixed'),
+('pr_02', 5, 22, '1', 120000.00, 'br_01', 'pricetype_fixed'),
+('pr_03', 5, 22, '0', 100000.00, 'br_02', 'pricetype_casual');
 
 INSERT INTO `reservation` (`id`, `create_at`, `book_at`, `total_price`, `deposit`, `status`, `player_id`, `branch_id`) VALUES
 ('res_01', '2026-03-24 10:00:00', '2026-03-25 17:00:00', 180000.00, 50000.00, 'CONFIRMED', 'pl_01', 'br_01'),
@@ -333,4 +335,4 @@ INSERT INTO `temporary_recruitment` (`id`, `create_at`, `quantity`, `is_availabl
 
 INSERT INTO `temporary_registration` (`temporary_recruitment_id`, `player_id`) VALUES
 ('rec_01', 'pl_02'),
-('rec_02', 'pl_04'); 
+('rec_02', 'pl_04');

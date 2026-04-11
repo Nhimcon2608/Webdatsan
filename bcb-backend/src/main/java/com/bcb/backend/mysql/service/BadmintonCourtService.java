@@ -31,6 +31,14 @@ public class BadmintonCourtService {
         Branch branch = branchRepository.findById(request.getBranchId())
                 .orElseThrow(() -> new EntityNotFoundException("Branch not found"));
 
+        if (request.getOrdinalNumber() < 1) {
+            throw new IllegalArgumentException("Court ordinal number must be greater than 0");
+        }
+
+        if (badmintonCourtRepository.existsByBranch_IdAndOrdinalNumber(branch.getId(), request.getOrdinalNumber())) {
+            throw new IllegalArgumentException("Court ordinal number already exists in this branch");
+        }
+
         BadmintonCourt court = BadmintonCourtMapper.toBadmintonCourt(request, branch);
         court.setId(GenerationId.generateId("badm"));
         BadmintonCourt saved = badmintonCourtRepository.save(court);
@@ -79,6 +87,17 @@ public class BadmintonCourtService {
 
         Branch branch = branchRepository.findById(request.getBranchId())
                 .orElseThrow(() -> new EntityNotFoundException("Branch not found"));
+
+        if (request.getOrdinalNumber() < 1) {
+            throw new IllegalArgumentException("Court ordinal number must be greater than 0");
+        }
+
+        boolean ordinalChanged = court.getOrdinalNumber() != request.getOrdinalNumber()
+                || !court.getBranch().getId().equals(branch.getId());
+        if (ordinalChanged
+                && badmintonCourtRepository.existsByBranch_IdAndOrdinalNumber(branch.getId(), request.getOrdinalNumber())) {
+            throw new IllegalArgumentException("Court ordinal number already exists in this branch");
+        }
 
         court.setOrdinalNumber(request.getOrdinalNumber());
         court.setAvailable(request.isAvailable());

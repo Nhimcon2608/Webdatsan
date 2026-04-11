@@ -6,6 +6,7 @@ import com.bcb.backend.mysql.dto.request.ReservationRequestDTO;
 import com.bcb.backend.mysql.dto.response.ReservationResponseDTO;
 import com.bcb.backend.mysql.mapper.ReservationMapper;
 import com.bcb.backend.mysql.model.Reservation;
+import com.bcb.backend.mysql.model.Voucher;
 import com.bcb.backend.mysql.repository.BranchRepository;
 import com.bcb.backend.mysql.repository.PlayerRepository;
 import com.bcb.backend.mysql.repository.ReservationRepository;
@@ -117,10 +118,7 @@ public class ReservationService {
 					.ifPresent(reservation::setPlayer);
 		}
 
-		if (dto.getVoucherId() != null) {
-			voucherRepository.findById(dto.getVoucherId())
-					.ifPresent(reservation::setVoucher);
-		}
+		applyVoucher(reservation, dto.getVoucherId());
 
 		if (dto.getBranchId() != null) {
 			branchRepository.findById(dto.getBranchId())
@@ -158,10 +156,7 @@ public class ReservationService {
 					.ifPresent(reservation::setPlayer);
 		}
 
-		if (dto.getVoucherId() != null) {
-			voucherRepository.findById(dto.getVoucherId())
-					.ifPresent(reservation::setVoucher);
-		}
+		applyVoucher(reservation, dto.getVoucherId());
 
 		reservation = reservationRepository.save(reservation);
 
@@ -183,6 +178,30 @@ public class ReservationService {
 		reservation = reservationRepository.save(reservation);
 
 		return ReservationMapper.toDTO(reservation);
+	}
+
+	private void applyVoucher(Reservation reservation, String voucherId) {
+		if (voucherId == null || voucherId.isBlank()) {
+			return;
+		}
+
+		Voucher voucher = voucherRepository.findById(voucherId)
+				.orElseThrow(() -> new IllegalArgumentException("Voucher not found"));
+
+		if (!isVoucherActive(voucher)) {
+			throw new IllegalArgumentException("Voucher không còn hiệu lực");
+		}
+
+		reservation.setVoucher(voucher);
+	}
+
+	private boolean isVoucherActive(Voucher voucher) {
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+		return voucher.isAvailable()
+				&& voucher.getStartDate() != null
+				&& voucher.getEndDate() != null
+				&& !today.isBefore(voucher.getStartDate())
+				&& !today.isAfter(voucher.getEndDate());
 	}
 
 	public List<ReservationResponseDTO> getRecentReservations(String branchId, String status) {

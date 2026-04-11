@@ -1,5 +1,5 @@
 // src/pages/VoucherManagement.jsx  (hoặc Voucher.jsx)
-import React, { useEffect, useState, useCallback, useContext } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
 	Box,
 	Button,
@@ -40,12 +40,51 @@ import voucherService from "../../../services/voucherService";
 import branchService from "../../../services/branchServce";
 import authService from "../../../services/authService";
 
+const DATE_INPUT_FORMAT = "YYYY-MM-DD";
+
+const getInitialForm = () => ({
+	event: "",
+	discountRate: "",
+	startDate: dayjs().format(DATE_INPUT_FORMAT),
+	endDate: dayjs().add(7, "day").format(DATE_INPUT_FORMAT),
+});
+
+const formatDateInput = (value, fallback) =>
+	value ? dayjs(value).format(DATE_INPUT_FORMAT) : fallback;
+
+const formatDisplayDate = (value) =>
+	value ? dayjs(value).format("DD/MM/YYYY") : "Chưa đặt";
+
+const getVoucherStatus = (voucher) => {
+	if (!voucher.available) {
+		return { label: "Đã khóa", color: "default" };
+	}
+
+	if (!voucher.startDate || !voucher.endDate) {
+		return { label: "Thiếu ngày", color: "warning" };
+	}
+
+	const today = dayjs().startOf("day");
+	const startDate = dayjs(voucher.startDate).startOf("day");
+	const endDate = dayjs(voucher.endDate).startOf("day");
+
+	if (today.isBefore(startDate)) {
+		return { label: "Sắp diễn ra", color: "info" };
+	}
+
+	if (today.isAfter(endDate)) {
+		return { label: "Hết hạn", color: "default" };
+	}
+
+	return { label: "Hoạt động", color: "success" };
+};
+
 const VoucherManagement = () => {
 	const theme = useTheme(); // ← Lấy theme đúng từ DashboardLayout
 	const [vouchers, setVouchers] = useState([]);
 	const [open, setOpen] = useState(false);
 	const [editingVoucher, setEditingVoucher] = useState(null);
-	const [form, setForm] = useState({ event: "", discountRate: "" });
+	const [form, setForm] = useState(getInitialForm);
 	const [errors, setErrors] = useState({});
 	const [branchId, setBranchId] = useState(null);
 	const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
@@ -93,9 +132,12 @@ const VoucherManagement = () => {
 
 	const handleOpen = (voucher = null) => {
 		setEditingVoucher(voucher);
+		const initialForm = getInitialForm();
 		setForm({
 			event: voucher?.event || "",
 			discountRate: voucher?.discountRate || "",
+			startDate: formatDateInput(voucher?.startDate, initialForm.startDate),
+			endDate: formatDateInput(voucher?.endDate, initialForm.endDate),
 		});
 		setErrors({});
 		setOpen(true);
@@ -115,9 +157,19 @@ const VoucherManagement = () => {
 
 	const validate = () => {
 		const err = {};
+		const discountRate = Number(form.discountRate);
 		if (!form.event.trim()) err.event = "Vui lòng nhập tên chương trình";
-		if (!form.discountRate || form.discountRate < 1 || form.discountRate > 100)
+		if (!form.discountRate || Number.isNaN(discountRate) || discountRate < 1 || discountRate > 100)
 			err.discountRate = "Giảm giá phải từ 1 đến 100%";
+		if (!form.startDate) err.startDate = "Vui lòng chọn ngày bắt đầu";
+		if (!form.endDate) err.endDate = "Vui lòng chọn ngày kết thúc";
+		if (
+			form.startDate &&
+			form.endDate &&
+			dayjs(form.endDate).isBefore(dayjs(form.startDate), "day")
+		) {
+			err.endDate = "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu";
+		}
 		setErrors(err);
 		return Object.keys(err).length === 0;
 	};
@@ -225,48 +277,56 @@ const VoucherManagement = () => {
 										<TableRow sx={{ backgroundColor: theme.palette.mode === "dark" ? "#1a3c34" : "#f0f7f4" }}>
 											<TableCell sx={{ fontWeight: 700, color: theme.palette.primary.main }}>Chương trình</TableCell>
 											<TableCell align="center" sx={{ fontWeight: 700 }}>Giảm giá</TableCell>
+											<TableCell sx={{ fontWeight: 700 }}>Bắt đầu</TableCell>
+											<TableCell sx={{ fontWeight: 700 }}>Kết thúc</TableCell>
 											<TableCell sx={{ fontWeight: 700 }}>Ngày tạo</TableCell>
 											<TableCell align="center" sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
 											<TableCell align="center" sx={{ fontWeight: 700 }}>Hành động</TableCell>
 										</TableRow>
 									</TableHead>
 									<TableBody>
-										{vouchers.map((v) => (
-											<TableRow key={v.id} hover>
-												<TableCell>
-													<Typography fontWeight={600} color="text.primary">
-														{v.event}
-													</Typography>
-												</TableCell>
-												<TableCell align="center">
-													<Chip label={`${v.discountRate}%`} color="primary" size="small" sx={{ fontWeight: "bold", minWidth: 64 }} />
-												</TableCell>
-												<TableCell>{dayjs(v.createAt).format("DD/MM/YYYY HH:mm")}</TableCell>
-												<TableCell align="center">
-													<Chip
-														label={v.available ? "Hoạt động" : "Đã khóa"}
-														color={v.available ? "success" : "default"}
-														size="small"
-														sx={{ minWidth: 100, fontWeight: 600 }}
-													/>
-												</TableCell>
-												<TableCell align="center">
-													<Tooltip title="Chỉnh sửa">
-														<IconButton color="primary" onClick={() => handleOpen(v)}>
-															<Edit />
-														</IconButton>
-													</Tooltip>
-													<Tooltip title={v.available ? "Vô hiệu hóa" : "Kích hoạt lại"}>
-														<IconButton
-															color={v.available ? "error" : "success"}
-															onClick={() => handleToggle(v.id, v.available)}
-														>
-															{v.available ? <Delete /> : <RestoreIcon />}
-														</IconButton>
-													</Tooltip>
-												</TableCell>
-											</TableRow>
-										))}
+										{vouchers.map((v) => {
+											const voucherStatus = getVoucherStatus(v);
+
+											return (
+												<TableRow key={v.id} hover>
+													<TableCell>
+														<Typography fontWeight={600} color="text.primary">
+															{v.event}
+														</Typography>
+													</TableCell>
+													<TableCell align="center">
+														<Chip label={`${v.discountRate}%`} color="primary" size="small" sx={{ fontWeight: "bold", minWidth: 64 }} />
+													</TableCell>
+													<TableCell>{formatDisplayDate(v.startDate)}</TableCell>
+													<TableCell>{formatDisplayDate(v.endDate)}</TableCell>
+													<TableCell>{dayjs(v.createAt).format("DD/MM/YYYY HH:mm")}</TableCell>
+													<TableCell align="center">
+														<Chip
+															label={voucherStatus.label}
+															color={voucherStatus.color}
+															size="small"
+															sx={{ minWidth: 100, fontWeight: 600 }}
+														/>
+													</TableCell>
+													<TableCell align="center">
+														<Tooltip title="Chỉnh sửa">
+															<IconButton color="primary" onClick={() => handleOpen(v)}>
+																<Edit />
+															</IconButton>
+														</Tooltip>
+														<Tooltip title={v.available ? "Vô hiệu hóa" : "Kích hoạt lại"}>
+															<IconButton
+																color={v.available ? "error" : "success"}
+																onClick={() => handleToggle(v.id, v.available)}
+															>
+																{v.available ? <Delete /> : <RestoreIcon />}
+															</IconButton>
+														</Tooltip>
+													</TableCell>
+												</TableRow>
+											);
+										})}
 									</TableBody>
 								</Table>
 							</TableContainer>
@@ -315,6 +375,31 @@ const VoucherManagement = () => {
 						inputProps={{ min: 1, max: 100 }}
 						sx={{ mt: 3 }}
 					/>
+					<Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mt: 3 }}>
+						<TextField
+							fullWidth
+							label="Ngày bắt đầu"
+							name="startDate"
+							type="date"
+							value={form.startDate}
+							onChange={handleChange}
+							error={!!errors.startDate}
+							helperText={errors.startDate}
+							InputLabelProps={{ shrink: true }}
+						/>
+						<TextField
+							fullWidth
+							label="Ngày kết thúc"
+							name="endDate"
+							type="date"
+							value={form.endDate}
+							onChange={handleChange}
+							error={!!errors.endDate}
+							helperText={errors.endDate}
+							InputLabelProps={{ shrink: true }}
+							inputProps={{ min: form.startDate || undefined }}
+						/>
+					</Stack>
 				</DialogContent>
 				<DialogActions sx={{ px: 3, pb: 3 }}>
 					<Button onClick={handleClose} disabled={dialogLoading}>Hủy</Button>

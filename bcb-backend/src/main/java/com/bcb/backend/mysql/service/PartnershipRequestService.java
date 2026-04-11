@@ -38,6 +38,7 @@ public class PartnershipRequestService {
 				.orElseThrow(() -> new IllegalArgumentException("ParnershipRequest not found with id: " + id)));
 	}
 
+	@Transactional
 	public PartnershipRequestResponse createPartnershipRequest(OwnerRequest ownerRequest,
 			PartnershipRequestRequest partnerRequest) {
 
@@ -52,10 +53,13 @@ public class PartnershipRequestService {
 					.orElseThrow(
 							() -> new IllegalArgumentException("Owner not found with id: " + ownerRequest.getId()));
 		} else {
-			OwnerResponse ownerResponse = ownerService.createOwner(ownerRequest);
-			owner = ownerRepo.findById(ownerResponse.getId())
-					.orElseThrow(
-							() -> new IllegalArgumentException("Owner not create, id: " + ownerResponse.getId()));
+			owner = ownerRepo.findByPhoneNumber(ownerRequest.getPhoneNumber())
+					.orElseGet(() -> {
+						OwnerResponse ownerResponse = ownerService.createOwner(ownerRequest);
+						return ownerRepo.findById(ownerResponse.getId())
+								.orElseThrow(
+										() -> new IllegalArgumentException("Owner not create, id: " + ownerResponse.getId()));
+					});
 		}
 
 		partner.setOwner(owner);

@@ -10,6 +10,8 @@ import com.bcb.backend.mysql.repository.VoucherRepository;
 
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,7 +35,9 @@ public class VoucherService {
 
     // Lấy toàn bộ voucher còn hiệu lực
     public List<VoucherResponse> getActiveVouchers() {
-        return voucherRepository.findByIsAvailableTrue().stream()
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        return voucherRepository
+                .findByIsAvailableTrueAndStartDateLessThanEqualAndEndDateGreaterThanEqual(today, today).stream()
                 .map(VoucherMapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -47,6 +51,8 @@ public class VoucherService {
 
     // Tạo mới voucher
     public VoucherResponse create(VoucherRequest request) {
+        validateRequest(request);
+
         Voucher voucher = VoucherMapper.toEntity(request);
         voucher.setId(GenerationId.generateId("vouc"));
         if (request.getBranchId() != null) {
@@ -58,10 +64,14 @@ public class VoucherService {
 
     // Cập nhật voucher
     public VoucherResponse updateVoucher(String id, VoucherRequest request) {
+        validateRequest(request);
+
         Voucher voucher = voucherRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Voucher not found"));
 
         voucher.setDiscountRate(request.getDiscountRate());
+        voucher.setStartDate(request.getStartDate());
+        voucher.setEndDate(request.getEndDate());
         voucher.setEvent(request.getEvent());
         voucher.setAvailable(request.isAvailable());
 
@@ -83,7 +93,7 @@ public class VoucherService {
     }
 
     public List<VoucherResponse> getAllVouchersOfBranch(String branchId) {
-        return voucherRepository.findAll().stream().filter(v -> v.getBranch().getId().equals(branchId))
+        return voucherRepository.findByBranch_Id(branchId).stream()
                 .map(VoucherMapper::toDTO).collect(Collectors.toList());
     }
 
@@ -94,6 +104,20 @@ public class VoucherService {
 
         voucher.setAvailable(status);
         return VoucherMapper.toDTO(voucherRepository.save(voucher));
+    }
+
+    private void validateRequest(VoucherRequest request) {
+        if (request.getStartDate() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn ngày bắt đầu voucher");
+        }
+
+        if (request.getEndDate() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn ngày kết thúc voucher");
+        }
+
+        if (request.getEndDate().isBefore(request.getStartDate())) {
+            throw new IllegalArgumentException("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu");
+        }
     }
 
 }

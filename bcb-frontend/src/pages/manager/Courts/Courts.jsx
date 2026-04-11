@@ -15,9 +15,16 @@ import {
 	Chip,
 	Skeleton,
 	alpha,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+	FormControlLabel,
+	Switch,
 } from "@mui/material";
 import Grid from "@mui/material/Grid"; // Import Grid cũ
 import {
+	Add as AddIcon,
 	Search as SearchIcon,
 	Refresh as RefreshIcon,
 	SportsTennis,
@@ -26,11 +33,13 @@ import CourtCard from "./CourtCard";
 import BadmintonIcon from "../../../components/common/BadmintonIcon";
 import badmintionCourtService from "../../../services/badmintonCourtService";
 import authService from "../../../services/authService";
+import branchService from "../../../services/branchServce";
 import reservationDetailService from "../../../services/reservationDetailService";
 
 const Courts = () => {
 	const theme = useTheme();
 
+	const [branchId, setBranchId] = useState("");
 	const [courts, setCourts] = useState([]);
 	const [expandedCourtId, setExpandedCourtId] = useState(null);
 	const [slots, setSlots] = useState({});
@@ -38,6 +47,10 @@ const Courts = () => {
 	const [error, setError] = useState(null);
 	const [search, setSearch] = useState("");
 	const [filterStatus, setFilterStatus] = useState("ALL");
+	const [addDialogOpen, setAddDialogOpen] = useState(false);
+	const [addingCourt, setAddingCourt] = useState(false);
+	const [newCourt, setNewCourt] = useState({ ordinalNumber: "", available: true });
+	const [addCourtError, setAddCourtError] = useState("");
 
 	// === FETCH COURTS ===
 	const fetchCourts = useCallback(async () => {
@@ -48,10 +61,12 @@ const Courts = () => {
 			if (!token) throw new Error("Vui lòng đăng nhập lại.");
 
 			const account = await authService.getCurrentAccount(token);
+			const branch = await branchService.getBranchByAccountId(account.id);
 			const data = await badmintionCourtService.getCourtsByManager(account.id, token);
 
 			const sortedData = (data || []).sort((a, b) => a.ordinalNumber - b.ordinalNumber);
 
+			setBranchId(branch.id);
 			setCourts(sortedData);
 		} catch (err) {
 			setError(err.message || "Không thể tải danh sách sân.");
@@ -97,6 +112,65 @@ const Courts = () => {
 	const handleClearFilters = () => {
 		setSearch("");
 		setFilterStatus("ALL");
+	};
+
+	const openAddDialog = () => {
+		const nextNumber = courts.length > 0
+			? Math.max(...courts.map((court) => Number(court.ordinalNumber) || 0)) + 1
+			: 1;
+
+		setNewCourt({ ordinalNumber: String(nextNumber), available: true });
+		setAddCourtError("");
+		setAddDialogOpen(true);
+	};
+
+	const closeAddDialog = () => {
+		if (addingCourt) return;
+		setAddDialogOpen(false);
+		setAddCourtError("");
+	};
+
+	const handleNewCourtChange = (event) => {
+		const { name, value, checked, type } = event.target;
+		setNewCourt((prev) => ({
+			...prev,
+			[name]: type === "checkbox" ? checked : value,
+		}));
+		setAddCourtError("");
+	};
+
+	const handleAddCourt = async () => {
+		const ordinalNumber = Number(newCourt.ordinalNumber);
+
+		if (!branchId) {
+			setAddCourtError("Không tìm thấy chi nhánh của tài khoản quản lý.");
+			return;
+		}
+
+		if (!Number.isInteger(ordinalNumber) || ordinalNumber < 1) {
+			setAddCourtError("Số sân phải là số nguyên lớn hơn 0.");
+			return;
+		}
+
+		if (courts.some((court) => Number(court.ordinalNumber) === ordinalNumber)) {
+			setAddCourtError(`Sân số ${ordinalNumber} đã tồn tại.`);
+			return;
+		}
+
+		setAddingCourt(true);
+		try {
+			await badmintionCourtService.addCourt({
+				ordinalNumber,
+				available: newCourt.available,
+				branchId,
+			});
+			setAddDialogOpen(false);
+			await fetchCourts();
+		} catch (err) {
+			setAddCourtError(err.response?.data?.message || err.message || "Không thể thêm sân mới.");
+		} finally {
+			setAddingCourt(false);
+		}
 	};
 
 	return (
@@ -181,6 +255,22 @@ const Courts = () => {
 
 						<Button
 							variant="contained"
+							startIcon={<AddIcon />}
+							onClick={openAddDialog}
+							size="small"
+							disabled={!branchId || loading}
+							sx={{
+								whiteSpace: "nowrap",
+								minWidth: 120,
+								bgcolor: "success.dark",
+								"&:hover": { bgcolor: "success.main" },
+							}}
+						>
+							Thêm sân
+						</Button>
+
+						<Button
+							variant="contained"
 							startIcon={<RefreshIcon />}
 							onClick={fetchCourts}
 							size="small"
@@ -228,6 +318,65 @@ const Courts = () => {
 					))}
 				</Box>
 			)}
+
+			<Dialog
+				open={addDialogOpen}
+				onClose={closeAddDialog}
+				fullWidth
+				maxWidth="xs"
+				slotProps={{
+					paper: {
+						sx: { borderRadius: 3 },
+					},
+				}}
+			>
+				<DialogTitle>Thêm sân cầu lông</DialogTitle>
+				<DialogContent>
+					<Stack spacing={2} sx={{ pt: 1 }}>
+						<Typography variant="body2" color="text.secondary">
+							Tạo sân mới cho chi nhánh hiện tại. Số sân không được trùng với sân đã có.
+						</Typography>
+
+						<TextField
+							autoFocus
+							fullWidth
+							required
+							label="Số sân"
+							name="ordinalNumber"
+							type="number"
+							value={newCourt.ordinalNumber}
+							onChange={handleNewCourtChange}
+							error={Boolean(addCourtError)}
+							helperText={addCourtError}
+							inputProps={{ min: 1, step: 1 }}
+						/>
+
+						<FormControlLabel
+							control={
+								<Switch
+									name="available"
+									checked={newCourt.available}
+									onChange={handleNewCourtChange}
+									color="success"
+								/>
+							}
+							label="Sân đang hoạt động"
+						/>
+					</Stack>
+				</DialogContent>
+				<DialogActions sx={{ px: 3, pb: 3 }}>
+					<Button onClick={closeAddDialog} disabled={addingCourt}>
+						Hủy
+					</Button>
+					<Button
+						variant="contained"
+						onClick={handleAddCourt}
+						disabled={addingCourt || !newCourt.ordinalNumber}
+					>
+						{addingCourt ? "Đang thêm..." : "Thêm sân"}
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Container>
 	);
 };

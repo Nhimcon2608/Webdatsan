@@ -52,6 +52,26 @@ import ActionButton from './ActionButton';
 import branchService from '../../../services/branchServce';
 import partnershipRequestService from '../../../services/partnershipRequestService';
 
+const getRequestTime = (request) => {
+	const time = new Date(request.createAt).getTime();
+	return Number.isNaN(time) ? 0 : time;
+};
+
+const sortOwnersByLatestRequest = (owners) => {
+	return [...owners]
+		.map((owner) => ({
+			...owner,
+			partnershipRequest: [...(owner.partnershipRequest || [])].sort(
+				(a, b) => getRequestTime(b) - getRequestTime(a)
+			),
+		}))
+		.sort((a, b) => {
+			const latestA = a.partnershipRequest[0] ? getRequestTime(a.partnershipRequest[0]) : 0;
+			const latestB = b.partnershipRequest[0] ? getRequestTime(b.partnershipRequest[0]) : 0;
+			return latestB - latestA;
+		});
+};
+
 
 const PartnershipRequestPage = () => {
 	const navigate = useNavigate();
@@ -73,21 +93,33 @@ const PartnershipRequestPage = () => {
 
 	useEffect(() => {
 		fetchAllOwners();
-	}, []);
-
-	useEffect(() => {
-		fetchAllOwners();
 	}, [refreshFlag]);
 
+	useEffect(() => {
+		const refreshWhenVisible = () => {
+			if (document.visibilityState === 'visible') {
+				fetchAllOwners();
+			}
+		};
+
+		window.addEventListener('focus', refreshWhenVisible);
+		document.addEventListener('visibilitychange', refreshWhenVisible);
+
+		return () => {
+			window.removeEventListener('focus', refreshWhenVisible);
+			document.removeEventListener('visibilitychange', refreshWhenVisible);
+		};
+	}, []);
 
 	const fetchAllOwners = async () => {
 		try {
 			setLoading(true);
 			const response = await ownerService.getAllOwner();
-			setOwners(response);
+			const sortedOwners = sortOwnersByLatestRequest(response);
+			setOwners(sortedOwners);
 
 			const initialExpandedState = {};
-			response.forEach(owner => {
+			sortedOwners.forEach(owner => {
 				initialExpandedState[owner.id] = true;
 			});
 			setExpandedOwners(initialExpandedState);
