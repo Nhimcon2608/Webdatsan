@@ -29,12 +29,40 @@ const apiClient = axios.create({
 	},
 });
 
+const publicRequestPrefixes = [
+	"/auth/login",
+	"/auth/register",
+	"/branches/",
+	"/badminton-courts/",
+	"/prices/",
+	"/price-types/",
+	"/reviews/",
+	"/vouchers/active",
+	"/vouchers/branch/",
+	"/reservations/branch/",
+	"/reservations/latest",
+	"/reservations/recent",
+];
+
+function getRequestPath(url) {
+	if (!url) {
+		return "";
+	}
+
+	try {
+		return new URL(url, window.location.origin).pathname;
+	} catch {
+		return url;
+	}
+}
+
 function shouldAttachAuthToken(url) {
 	if (!url) {
 		return true;
 	}
 
-	return !["/auth/login", "/auth/register"].includes(url);
+	const requestPath = getRequestPath(url);
+	return !publicRequestPrefixes.some((prefix) => requestPath.startsWith(prefix));
 }
 
 function removeContentTypeHeader(headers) {
