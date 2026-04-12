@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -59,8 +60,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/badminton-courts/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/prices/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/price-types/**").permitAll()
-                        .requestMatchers("/api/uploads/**", "/reviews/**").permitAll()
-                        .requestMatchers("/api/uploads/**", "/uploads/**").permitAll() 
+                        .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/vouchers/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/reservations/branch/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/reservations/recent").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/reservations/latest").permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/api/uploads/**")).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/uploads/**")).permitAll()
                         // Chỉ ADMIN mới được xem danh sách blacklisted tokens
                         .requestMatchers("/auth/blacklisted-tokens").hasRole("ADMIN")
                         // Tất cả các request còn lại phải xác thực
